@@ -1,0 +1,41 @@
+{
+  "name": "hellovue",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build"
+  },
+  "dependencies": {
+    "@kangc/v-md-editor": "^2.3.18",
+    "@kousum/semi-ui-vue": "^2.74.0",
+    "@vue/compat": "^3.5.13",
+    "animate.css": "^4.1.1",
+    "axios": "^1.6.0",
+    "core-js": "^3.8.3",
+    "echarts": "^5.6.0",
+    "element-plus": "^2.9.1",
+    "file-saver": "^2.0.5",
+    "highlight.js": "^11.11.1",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.1",
+    "md-editor-v3": "^5.4.4",
+    "vue": "^3.5.13",
+    "vue-router": "^4.2.5",
+    "vuex": "^4.1.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@babel/plugin-transform-private-methods": "^7.25.9",
+    "@vue/cli-plugin-babel": "~5.0.0",
+    "@vue/cli-service": "~5.0.0",
+    "sass": "^1.86.0",
+    "sass-loader": "^12.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ]
+}
