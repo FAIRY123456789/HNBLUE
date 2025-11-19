@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-HNBLUE - 恒定RPS负载生成器 (基于asyncio/aiohttp)
+HNBLUE - 恒定RPS负载生成模块 (基于asyncio/aiohttp)
 
 功能概述：
 • 模拟恒定请求速率对目标API进行压力测试
