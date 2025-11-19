@@ -1,37 +1,27 @@
-# HNBLUE
+# HNBLUE：海南蓝碳数字化应用系统
 
-#### 介绍
-HNBLUE 系统旨在面向蓝碳生态系统，提供多源数据集成、碳储建模与智能交互的综合数字化平台。
+HNBLUE 系统旨在面向蓝碳生态系统，提供多源数据集成、碳储建模与智能交互的综合数字化平台。系统在架构设计、建模方法与可视化实现上均具备工程化特征，能够为生态监测与碳汇评估提供数据支撑与应用示范。
 
-#### 软件架构
-软件架构说明
+## 一、系统概述
 
+本系统由五个主要部分构成：（1）桌面版 AnythingLLM 作为接入层，结合 DeepSeek API 与私域知识库，支持 AI 碳助手的知识问答与解释；（2）Redis Cluster 部署于 VMWare 节点的容器集群环境，用于限流与分布式互斥锁，实现高并发条件下的稳定运行；（3）Spring Boot 后端，承担用户管理、接口服务与安全控制，结合 MySQL 数据库进行存储；（4）Vue.js 前端，集成 ECharts，提供区域地图、时间序列与指标对比的动态可视化；（5）Flask 服务，封装 CatBoost 模型与 SHAP 解释分析，为系统提供预测与可解释性支撑。
 
-#### 安装教程
+## 二、运行方式
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+系统运行依赖顺序明确：（1）首先启动 AnythingLLM 桌面程序，确保与 DeepSeek API 及私域知识库的连接；（2）随后在 VMWare 虚拟机节点内启动 Redis Cluster，利用 docker 服务与脚本启动六个容器节点；（3）通过 IntelliJ IDEA 启动 Spring Boot 应用，后端服务接入 Redis 集群与 MySQL 数据库；（4）在 VS Code 中使用 `npm run serve` 启动前端，确保前后端联通；（5）最后在 PyCharm 中运行 Flask 应用，暴露模型预测与解释接口。完成上述流程后，可通过前端访问系统的各项功能。
 
-#### 使用说明
+## 三、核心功能
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+系统的功能模块主要包括：（1）碳储建模与解释，采用 CatBoost 算法构建碳储预测模型，结合 SHAP 分析量化特征贡献，模型拟合精度达到 R²≈0.98；（2）智能交互助手，基于 AnythingLLM 与 DeepSeek API，实现私域知识驱动的 AI 碳助手，用于解释模型结果与支持用户查询；（3）可视化分析，前端实现交互式地图、指标趋势与对比分析，支持区域与时间范围的筛选；（4）系统治理与安全，Redis Cluster 实现 API 限流与互斥锁机制，防止缓存击穿与异常流量；用户密码存储采用盐+哈希策略，增强系统安全性；（5）测试与验证，利用 JUnit 完成功能测试，结果表明系统具备较高稳定性与可扩展性。
 
-#### 参与贡献
+## 四、系统架构
 
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+系统架构由数据层、服务层、交互层与模型层构成。数据层包含 MySQL 与 Redis Cluster，服务层由 Spring Boot 后端提供接口与安全治理，交互层由 Vue.js 前端构成，模型层通过 Flask 部署 CatBoost 与 SHAP，实现预测与解释。智能交互模块则由 AnythingLLM 桌面端接入 DeepSeek API 与知识库，提供辅助支持。
 
+## 五、成果与展示
 
-#### 特技
+系统成果涵盖多方面：（1）交互式前端页面，展示碳储量与碳通量的时空分布与趋势；（2）基于 CatBoost 与 SHAP 的建模结果与可解释性图表；（3）Redis Cluster 与 API 限流的高并发实验结果；
 
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+## 六、说明
+
+本仓库包含核心代码结构、样例数据与主要成果截图，用于展示系统的工程实现与应用价值。由于系统运行依赖特定环境（Redis Cluster、桌面版 AnythingLLM 等），仓库不保证外部环境下可直接运行。部分配置、密钥与数据未予公开，仅提供脱敏样例与示意。
