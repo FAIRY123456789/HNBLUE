@@ -26,7 +26,9 @@ package com.example.jpaspringboot.controller;
 
 import com.example.jpaspringboot.dto.UserInfoDTO;
 import com.example.jpaspringboot.service.impl.UserServiceImpl;
+import com.example.jpaspringboot.service.impl.UserActivityLogServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -42,6 +44,9 @@ public class UserController {
     @Autowired
     private UserServiceImpl userServiceImpl; // 用户服务实现类依赖注入
 
+    @Autowired
+    private UserActivityLogServiceImpl activityLogService;
+
     /**
      * 获取当前用户信息接口
      *
@@ -49,7 +54,7 @@ public class UserController {
      * @return 用户信息DTO或错误消息
      */
     @GetMapping("/info")
-    public ResponseEntity<?> getUserInfo(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<?> getUserInfo(@RequestHeader(value = "Authorization", required = false) String authHeader) {
         // 验证Authorization头格式
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             try {
@@ -61,7 +66,7 @@ public class UserController {
                 return ResponseEntity.badRequest().body("Unable to fetch user information"); // 返回400错误
             }
         } else {
-            return ResponseEntity.badRequest().body("Invalid Authorization header"); // 返回认证头格式错误
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Authorization header"); // 返回认证头格式错误
         }
     }
 
@@ -73,7 +78,7 @@ public class UserController {
      * @return 头像二进制数据或错误消息
      */
     @PostMapping("/avatar")
-    public ResponseEntity<?> uploadAvatar(@RequestHeader("Authorization") String authHeader,
+    public ResponseEntity<?> uploadAvatar(@RequestHeader(value = "Authorization", required = false) String authHeader,
                                           @RequestParam("file") MultipartFile file) {
 
         System.out.println("我已收到头像"); // 调试日志
@@ -84,6 +89,7 @@ public class UserController {
                 int userId = userServiceImpl.getUserIDByToken(token); // 从令牌解析用户ID
                 // 存储头像并获取头像二进制数据
                 byte[] avatarData = userServiceImpl.updateAvatar((long) userId, file);
+                activityLogService.record(userId, userServiceImpl.getUsernameById(userId), "User", userId, "USER_AVATAR_UPDATE", "用户修改头像", "/user/avatar", "SUCCESS", null);
 
                 System.out.println("我已修改头像"); // 调试日志
 
@@ -97,7 +103,7 @@ public class UserController {
                         .body("Failed to update avatar: " + e.getMessage());
             }
         } else {
-            return ResponseEntity.badRequest().body("Invalid Authorization header"); // 返回认证头格式错误
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Authorization header"); // 返回认证头格式错误
         }
     }
 
@@ -109,20 +115,26 @@ public class UserController {
      * @return 操作结果消息
      */
     @PutMapping("/updateInfo")
-    public ResponseEntity<?> updateUserInfo(@RequestHeader("Authorization") String token,
+    public ResponseEntity<?> updateUserInfo(@RequestHeader(value = "Authorization", required = false) String token,
                                             @RequestBody Map<String, String> payload) {
-        // 从请求体中提取更新字段
         String name = payload.get("name");
         String password = payload.get("password");
         String email = payload.get("email");
         String birthdate = payload.get("birthdate");
 
-        // 调用服务层更新用户信息
-        boolean success = userServiceImpl.updateCurrentUserInfo(token, name, password, email, birthdate);
-        if (success) {
-            return ResponseEntity.ok("信息更新成功！"); // 返回200 OK及成功消息
-        } else {
-            return ResponseEntity.badRequest().body("未修改任何内容或更新失败。"); // 返回400错误消息
+        try {
+            boolean success = userServiceImpl.updateCurrentUserInfo(token, name, password, email, birthdate);
+            if (success) {
+                int userId = userServiceImpl.getUserIDByToken(token.replace("Bearer ", ""));
+                activityLogService.record(userId, userServiceImpl.getUsernameById(userId), "User", userId, "USER_PROFILE_UPDATE", "用户修改个人资料", "/user/updateInfo", "SUCCESS", null);
+                return ResponseEntity.ok("信息更新成功！");
+            }
+            return ResponseEntity.badRequest().body("未修改任何内容或更新失败。");
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body("请确保新密码不少于 8 位，并同时包含英文字母和数字。");
+        } catch (DataIntegrityViolationException ex) {
+            return ResponseEntity.badRequest().body("用户名或邮箱已存在，请更换后重试");
         }
     }
+
 }

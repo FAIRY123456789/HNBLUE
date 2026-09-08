@@ -1,4 +1,4 @@
-# It's better to unpack these files and commit the raw source because
+﻿# It's better to unpack these files and commit the raw source because
 # git has its own built in compression methods.
 *.7z
 *.jar
@@ -30,3 +30,46 @@
 *.msm
 *.msp
 *.txz
+
+# Local Codex run artifacts; may include transient database command outputs.
+.codex-run/
+
+# HNBLUE local runtime and build artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.cache/
+backend/target/
+flask_model/carbon_model_api/.venv/
+flask_model/**/__pycache__/
+*.pyc
+*.pyo
+*.log
+logs/
+.env
+.env.*
+!.env.example
+!**/.env.example
+application-local-private.properties
+**/application-local-private.properties
+.idea/
+.vscode/
+# Raw, derived, and licensed datasets stay local. A tiny synthetic example
+# package is intentionally versioned for the public demo.
+data/**
+!data/examples/
+!data/examples/**
+
+# Model training data and generated load-test traces stay local.
+flask_model/BAAD_raw.csv
+flask_model/carbon_model_api/results.csv
+reports/sse-curl-*.txt
+
+# Internal interview and software-copyright working materials are not part of
+# the public source release.
+docs/interview/
+docs/software_copyright/
+docs/*软著*.docx
+~$*.docx
+redis_data/
+anythingllm_storage/
+mysql_data/

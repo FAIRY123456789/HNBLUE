@@ -1,226 +1,248 @@
-# HNBLUE 接口说明（API）
+# HNBLUE API 参考
 
-本文档描述 HNBLUE 系统的接口约定，覆盖两类调用链：  
-（1）前端 → 后端（Spring Boot）；  
-（2）前端 → 模型服务（Flask）。  
+本文以当前 Spring Boot 与 Flask 代码为准。默认 Spring Boot 地址为 `http://127.0.0.1:8088`，Flask 内部地址为 `http://127.0.0.1:8880`。
 
-所有接口均采用 JSON 格式交互，时间统一为 ISO 8601 格式，字符编码为 UTF-8。除登录与注册外，所有接口请求需在请求头中携带 `Authorization: Bearer <token>`。前端直接调用 Spring Boot 获取业务与指标数据，同时直连 Flask 获取模型预测与 SHAP 解释结果。
+## 1. 约定与安全边界
 
----
+- 浏览器应只访问 Spring Boot；模型和 AnythingLLM 由 Spring Boot 代理。
+- 需要身份的接口使用 `Authorization: Bearer <JWT>`。
+- 当前代码没有统一的全局响应包：不同控制器会返回业务对象、`{data: ...}`、`{success: ...}` 或错误字符串，调用方应按具体接口处理。
+- 当前也没有覆盖全部路由的统一认证过滤链。用户、管理员和工作单接口在控制器中校验 Token；部分查询、模型和 AI 接口面向受控演示环境开放。
+- 查询参数和中文路径值应使用 UTF-8 URL 编码。
 
-## 1. 基本约定
+## 2. 健康检查
 
-- **基础路径**  
-  - 后端：`/api/...`  
-  - 模型服务：`/predict`, `/predict/batch`
+### `GET /api/v2/health`
 
-- **统一响应结构**  
-  - 成功：`{ "code": 0, "message": "OK", "data": ... }`  
-  - 失败：`{ "code": <非零>, "message": "<错误信息>", "requestId": "<可追踪ID>" }`  
+检查 Spring 数据服务状态。返回 `V2DataService` 汇总的状态对象。
 
-- **常见错误码**  
-  - 401 Unauthorized：令牌缺失或无效  
-  - 403 Forbidden：权限不足  
-  - 404 Not Found：资源不存在  
-  - 429 Too Many Requests：限流触发  
-  - 500 Internal Server Error：服务器内部错误  
+### `GET /api/model/health`
 
----
+由 Spring Boot 请求 Flask `/ping`。即使上游不可用也返回 HTTP 200，并通过 `ok: false` 表达不可用，便于前端保持参数可编辑状态。
 
-## 2. 认证与用户管理
+```json
+{"ok": true, "message": "模型服务已连接", "upstream": {"msg": "pong"}}
+```
 
-用户认证与权限控制由 Spring Boot 后端提供。令牌颁发后，前端需在后续请求中统一携带。
+## 3. 登录、注册与用户
 
-- **登录**  
-  - POST `/api/login`  
-  - Request:  
-    ```json
-    { "username": "alice", "password": "******" }
-    ```  
-  - Response:  
-    ```json
-    {
-      "code": 0,
-      "message": "OK",
-      "data": { "token": "jwt-token", "userType": "Admin" }
-    }
-    ```
+### `POST /api/login`
 
-- **注册**  
-  - POST `/api/register`  
-  - Request:  
-    ```json
-    { "username": "alice", "password": "******", "email": "a@b.com" }
-    ```
+请求：
 
-- **管理员接口（分页与模糊查询）**  
-  - GET `/api/admin/users?page=1&size=20&keyword=ali`  
-  - Response:  
-    ```json
-    {
-      "code": 0,
-      "message": "OK",
-      "data": {
-        "total": 235,
-        "items": [
-          { "userId": 1, "username": "alice", "email": "a@b.com", "userType": "User" }
-        ]
-      }
-    }
-    ```
+```json
+{"username": "demo-user", "password": "local-password"}
+```
 
----
+登录接口使用 Redis 按客户端地址和路径做限流：3 秒固定窗口最多 10 次，超限临时封禁 60 秒并返回 HTTP 429。Redis 不可用时当前实现降级放行。
 
-## 3. 区域与指标数据
+### `POST /api/register`
 
-区域与指标信息由 Spring Boot 后端统一管理。前端根据不同页面（总览、详情、专题分析）调用相关接口。
+请求字段：`username`、`password`、`email`、`birthdate`。
 
-- **区域列表**  
-  - GET `/api/regions`  
-  - Response:  
-    ```json
-    {
-      "code": 0,
-      "message": "OK",
-      "data": [ { "id": 46, "name": "海口" }, { "id": 47, "name": "三亚" } ]
-    }
-    ```
+### 密码重置
 
-- **当前指标值**  
-  - GET `/api/indicators/current?region=海口`  
-  - Response:  
-    ```json
-    {
-      "code": 0,
-      "message": "OK",
-      "data": {
-        "region": "海口",
-        "asOf": "2025-03-01",
-        "metrics": {
-          "SOC": 12.34,
-          "AGB": 56.78,
-          "CO2_flux": -0.45,
-          "CH4_flux": 0.03,
-          "GWP": 1.2
-        }
-      }
-    }
-    ```
+- `POST /api/initiateReset`：发起重置，请求包含 `username`、`email` 与 `newPassword`。
+- `GET /api/verifyToken?token=...&newPassword=...`：校验邮件 Token，并使用 Base64 编码的新密码执行当前重置流程。
+- `GET /api/checkResetStatus?username=...`：查询短期重置状态。
 
-- **指标趋势**  
-  - GET `/api/indicators/trends?region=海口&from=2015&to=2024`  
-  - Response:  
-    ```json
-    {
-      "code": 0,
-      "message": "OK",
-      "data": {
-        "region": "海口",
-        "series": [
-          { "year": 2015, "SOC": 10.1, "AGB": 50.2 },
-          { "year": 2016, "SOC": 10.6, "AGB": 51.0 }
-        ]
-      }
-    }
-    ```
+当前密码重置流程适合受控演示，部署到公网前应改为一次性短期 Token + HTTPS 表单提交，不能在 URL 中传递新密码。
 
----
+### 用户接口
 
-## 4. 模型预测与解释（Flask）
+| 方法 | 路径 | 用途 |
+|---|---|---|
+| GET | `/user/info` | 获取当前用户信息 |
+| POST | `/user/avatar` | 上传头像；`multipart/form-data` |
+| PUT | `/user/updateInfo` | 修改当前用户资料 |
 
-模型接口由 Flask 服务直接对前端开放，负责碳储预测与 SHAP 可解释性分析。前端在可视化组件中调用这些接口，以获取预测结果或解释图表。
+以上接口需要 Bearer Token。
 
-- **单样本预测**  
-  - POST `/predict`  
-  - Request:  
-    ```json
-    {
-      "features": {
-        "lat": 19.3, "lon": 110.4, "MAT": 24.1, "MAP": 1800,
-        "age": 12, "dbh": 14.5, "height": 8.3, "crown": 3.2,
-        "type": "mangrove_like"
-      }
-    }
-    ```  
-  - Response:  
-    ```json
-    { "code": 0, "message": "OK", "data": { "prediction": 72.45, "unit": "tC/ha" } }
-    ```
+## 4. 管理员接口
 
-- **批量预测**  
-  - POST `/predict/batch`  
-  - Request:  
-    ```json
-    {
-      "rows": [
-        { "lat": 19.3, "lon": 110.4, "MAT": 24.1, "MAP": 1800, "age": 12, "dbh": 14.5, "height": 8.3, "crown": 3.2, "type": "mangrove_like" },
-        { "lat": 19.1, "lon": 110.2, "MAT": 24.3, "MAP": 1750, "age": 10, "dbh": 13.1, "height": 7.9, "crown": 3.0, "type": "mangrove_like" }
-      ]
-    }
-    ```
+基础路径为 `/admin`，控制器会验证 Token 和管理员身份。
 
-- **单样本 SHAP 解释**  
-  - POST `/shap/local`  
-  - Response:  
-    ```json
-    {
-      "code": 0,
-      "message": "OK",
-      "data": {
-        "baseValue": 60.12,
-        "contributions": [
-          { "feature": "dbh", "value": 14.5, "shap": 5.31 },
-          { "feature": "height", "value": 8.3, "shap": 3.02 }
-        ],
-        "prediction": 72.45
-      }
-    }
-    ```
+| 方法 | 路径 | 用途 |
+|---|---|---|
+| GET | `/admin/users?page=0&size=10` | 分页列出用户 |
+| GET | `/admin/search?page=0&size=10&keyword=...` | 搜索用户 |
+| GET | `/admin/users/{id}` | 用户详情 |
+| POST | `/admin/add` | 新增用户 |
+| PUT | `/admin/update` | 更新用户 |
+| DELETE | `/admin/delete/{id}` | 删除单个用户 |
+| DELETE | `/admin/delete` | 按 JSON ID 数组批量删除 |
 
-- **全局特征重要性**  
-  - GET `/shap/global`  
-  - Response:  
-    ```json
-    {
-      "code": 0,
-      "message": "OK",
-      "data": [
-        { "feature": "dbh", "mean_abs_shap": 4.12 },
-        { "feature": "height", "mean_abs_shap": 3.67 }
-      ]
-    }
-    ```
+`GET /admin/hello` 是连通性演示，不代表权限能力。
 
----
+## 5. 数据中心与区域查询
 
-## 5. 专题与可视化模块
+### `GET /api/v2/dashboard/summary`
 
-前端的专题页面（如详情页、参数敏感性、响应曲线、文献比对、碳价值转换器等）均基于上述接口组合完成。详情页通过区域参数获取指标时间序列，专题分析模块调用 Flask 的模型与 SHAP 接口，并结合后端的区域指标接口进行联动。
+返回仪表盘汇总。Redis 缓存 10 分钟。
 
-- **详情页数据**  
-  - GET `/api/regions/{name}/detail?from=2015&to=2024`  
-  - Response:  
-    ```json
-    {
-      "code": 0,
-      "message": "OK",
-      "data": {
-        "region": "琼海",
-        "metrics": ["SOC", "AGB", "CO2_flux"],
-        "series": [
-          { "year": 2015, "SOC": 9.8, "AGB": 48.1 },
-          { "year": 2016, "SOC": 10.0, "AGB": 49.0 }
-        ]
-      }
-    }
-    ```
+### 可筛选数据接口
 
----
+| 方法 | 路径 | Redis TTL |
+|---|---|---:|
+| GET | `/api/v2/sources` | 6 小时 |
+| GET | `/api/v2/mangrove-cover` | 30 分钟 |
+| GET | `/api/v2/region-metrics` | 30 分钟 |
+| GET | `/api/v2/literature-carbon` | 2 小时 |
+| GET | `/api/v2/ai/context` | 10 分钟 |
 
-## 6. 并发与限流
+查询参数会作为筛选条件传给 `V2DataService`。前端常用区域、年份、指标和来源等参数；无效筛选应根据响应中的 `success`/错误字段判断。
 
-后端部分接口应用基于 Redis Cluster 的限流机制。当流量超过阈值时返回错误响应。前端应在 UI 层配合退避或禁用操作，避免重复请求。
+### `GET /api/v2/region-overview/{regionId}`
 
-- **限流响应示例**  
-  ```json
-  { "code": 10001, "message": "Too Many Requests", "requestId": "a1b2c3" }
+返回某地区汇总，Redis 缓存 15 分钟。
+
+### `GET /api/v2/optional/status`
+
+返回可选数据/服务的可用状态。
+
+### `GET /api/devisual/{regionName}`
+
+聚合某个合法海南市县的九类区域数据：基础信息、碳趋势、通量组成、多碳指标、年度趋势、生态分区、影响因子、物种组成和经济预测。非法区域返回 HTTP 400。
+
+### 可视化指标
+
+- `GET /api/indicators/current`：读取当前年度指标。
+- `PUT /api/indicators/update?region=...&indicator=...&value=...`：更新指标。
+
+`/api/indicators/update` 当前没有控制器级身份校验，只能在受控环境使用；公网部署前必须纳入管理员授权。
+
+## 6. 外部数据浏览
+
+基础路径：`/api/v2/external-datasets`。
+
+### `GET /api/v2/external-datasets`
+
+列出 `baad`、`tallo`、`chinallometree`、`gwm` 四个数据包及运行时记录数。服务优先读取数据库中已确认的表；否则读取本地 CSV。
+
+### `GET /api/v2/external-datasets/{datasetId}/tables`
+
+返回该数据包的表、字段数、记录数和实际来源类型。
+
+### `GET /api/v2/external-datasets/{datasetId}/schema`
+
+参数：
+
+- `tableName`：必填；表 ID、运行时表名或文件名；
+- `page`：默认 1；
+- `size`：允许 20、50、100；其他值归一化为 20；
+- `keyword`：可选字段字典搜索。
+
+### `GET /api/v2/external-datasets/{datasetId}/records`
+
+参数：`tableName`、`page=1`、`size=20`、可选 `keyword`、`sortField`、`sortDirection=asc|desc`。
+
+服务只接受实际 Schema 中的安全字段名，拒绝密码、Token、密钥等敏感字段名；CSV 结果在服务端分页，前端不会一次加载完整文件。
+
+公开仓库默认回退到 `data/examples/` 的合成数据。完整数据可通过 `HNBLUE_EXTERNAL_DATA_ROOT` 指向本地授权目录。
+
+## 7. 工作单
+
+所有工作单接口都需要 Bearer Token。
+
+| 方法 | 路径 | 用途 |
+|---|---|---|
+| GET | `/api/work-orders` | 按当前身份列出可见工作单 |
+| GET | `/api/work-orders/{id}` | 详情及动作日志 |
+| POST | `/api/work-orders` | 创建工作单 |
+| PUT | `/api/work-orders/{id}` | 更新非终态工作单 |
+| POST | `/api/work-orders/{id}/accept` | 管理员受理 |
+| POST | `/api/work-orders/{id}/submit-approval` | 二级管理员提交终审 |
+| POST | `/api/work-orders/{id}/approve` | 一级管理员批准 |
+| POST | `/api/work-orders/{id}/reject` | 一级管理员驳回 |
+| POST | `/api/work-orders/{id}/return` | 一级管理员退回 |
+| POST | `/api/work-orders/{id}/close` | 一级管理员关闭 |
+| POST | `/api/work-orders/{id}/comments` | 有查看权限的参与者评论 |
+
+创建/更新主体字段包括 `code`、`title`、`changeType`、`tableType`、`sourceCode`、`reason`、`payload`、`notes`、`assignedAdminName`、`testCode`。创建时 `title`、`changeType`、`tableType` 必填。
+
+动作请求可传：
+
+```json
+{"comment": "审核说明"}
+```
+
+主要状态：`SUBMITTED`、`PROCESSING`、`PENDING_APPROVAL`、`APPROVED`、`REJECTED`、`RETURNED`、`CLOSED`。非法角色、不可见记录和非法状态跳转分别返回 403、404/403 或 409。
+
+## 8. CatBoost 模型代理
+
+### `POST /api/model/predict-carbon`
+
+Spring Boot 将请求转发到 Flask `/api/predict-carbon`。
+
+```json
+{
+  "latitude": 19.0,
+  "longitude": 109.5,
+  "mat": 25.5,
+  "map": 1800,
+  "age": 25,
+  "treeHeight": 8.2,
+  "dbh": 16.5,
+  "canopy": 4.1,
+  "c.d": 0.7,
+  "vegetation": "mangrove",
+  "growingcondition": "natural",
+  "pft": "broadleaf"
+}
+```
+
+`treeHeight`、`dbh`、`canopy` 在当前实现中必须存在且可转换为数字；其余字段有默认值。成功响应：
+
+```json
+{"prediction": 123.456}
+```
+
+预测值是模型训练目标 `m.so` 的输出，不应在缺少面积、密度、碳比例和单位换算时直接解释为 `tC/ha`。
+
+### `POST /api/model/predict-carbon/batch`
+
+请求主体是上述对象的 JSON 数组；成功响应为 `{"predictions": [...]}`。上游不可用时 Spring Boot 返回 HTTP 502。
+
+Flask 还实现 `/api/literature-range`、`/api/sensitivity-analysis`、`/api/sensitivity-plot` 和 `/api/sensitivity-explain`，用于内部模型分析；当前 Spring Boot 没有代理这些路由，因此不属于推荐的浏览器公开 API。`HNBLUE_BAAD_FILE` 可指定文献统计 CSV，默认使用合成样例。
+
+## 9. AI 碳助手 SSE
+
+### `GET /api/chat/stream-carbon?message=...&sessionId=...`
+
+- `message`：必填问题；
+- `sessionId`：可选，会被规范化；未提供时由服务端生成；
+- 响应类型：`text/event-stream`；
+- 缓存：`no-cache`，并设置 `X-Accel-Buffering: no` 防止反向代理缓冲。
+
+前端使用 `EventSource` 接收 JSON 数据事件。事件对象的 `type` 可能为：
+
+| type | 含义 |
+|---|---|
+| `status` | 连接、检索或分析阶段提示 |
+| `delta` | 可直接追加到界面的可见文本增量 |
+| `meta` | 会话或来源元数据 |
+| `done` | 正常结束 |
+| `error` | 上游连接或解析错误 |
+
+Spring 会过滤上游思维标记，只转发面向用户的文本。AnythingLLM 配置由 `ANYTHINGLLM_API_URL`、`ANYTHINGLLM_API_KEY`、`ANYTHINGLLM_WORKSPACE` 提供，密钥只存在服务端。
+
+`GET /api/chat/stream` 是保留的兼容实现；新页面应使用 `/stream-carbon`。
+
+当前 AI SSE 路由没有强制身份验证，也没有消息长度、并发和配额控制。受控演示以外的部署应补充统一鉴权、输入限制、入口限流、内容安全和审计。
+
+## 10. 开发 Profile 接口
+
+以下接口只在 Spring `dev` Profile 下注册，不应部署到公网：
+
+- `GET /setRedisData?key=...&value=...`
+- `GET /getRedisData?key=...`
+- `GET /hello`
+- `GET /access/accessLimit`
+
+## 11. 代码入口
+
+- Spring 控制器：`backend/src/main/java/com/example/jpaspringboot/controller/`
+- 数据与缓存：`backend/src/main/java/com/example/jpaspringboot/service/V2DataService.java`
+- 外部数据：`backend/src/main/java/com/example/jpaspringboot/service/ExternalDatasetService.java`
+- Flask：`flask_model/carbon_model_api/app.py`
+- 前端 API 封装：`frontend/src/api/`

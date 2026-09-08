@@ -48,6 +48,7 @@ public class Admin {
      * 密码哈希值 - 存储加密后的密码，非明文密码
      * 结合盐值进行哈希计算，防止彩虹表攻击
      */
+    @Column(name = "password_hash")
     private String passwordHash; // 存储哈希值，而不是实际密码
 
     // ==================== 构造方法 ====================
@@ -148,7 +149,8 @@ public class Admin {
         this.passwordHash = passwordHash;
     }
 
+    @Override
     public String toString() {
-        return "Admin{id = " + id + ", name = " + name + ", salt = " + salt + ", passwordHash = " + passwordHash + "}";
+        return "Admin{id = " + id + ", name = " + name + "}";
     }
 }

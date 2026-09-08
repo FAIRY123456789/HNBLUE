@@ -1,391 +1,310 @@
-<!-- 
-碳溯主页面组件 - 智能碳汇决策系统入口
-
-功能概述：
-• 展示8大核心功能模块入口卡片
-• 集成AI助手悬浮按钮和聊天对话框
-• 动态导航栏根据用户类型显示不同入口
-
-模块分类：
-• 核心功能：结构参数预测器、虚拟样地实验设计器、碳储-价值转换器
-• 展示功能：SHAP可视化、响应曲线图、文献比对
-• 探索功能：AI碳助手、参数扰动敏感性分析
-
-设计特点：
-• 科技感渐变背景和网格卡片布局
-• 动画效果增强用户体验
-• 响应式设计适配不同屏幕
-
-数据流管理：
-• 通过localStorage获取用户类型
-• 控制AI聊天窗口的显示状态和动画
--->
 <template>
-  <!-- 导航栏 -->
-  <header>
-    <nav>
-      <router-link class="nav-items" to="/">首页</router-link>
-      <router-link class="nav-items" to="/about">关于</router-link>
-      <router-link class="nav-items" to="/visual">地图</router-link>
-      <router-link class="nav-items active" to="/carbonseek">碳溯</router-link>
-      <!-- 动态用户中心入口 -->
-      <router-link class="nav-items" :to="userCenterPath">{{ userCenterLabel }}</router-link>
-    </nav>
-  </header>
+  <PageShell>
+    <UnifiedNav />
+    <PageHero
+      title="碳溯"
+      eyebrow="CarbonSeek"
+      subtitle="面向学习、模型解释和案例推演，展示碳储估算从数据输入到结果解释的过程"
+      :tags="['模型流程', '碳储估算', '案例推演']"
+    >
+      <template #visual>
+        <div class="trace-orbit">
+          <span class="node n1">输入</span>
+          <span class="node n2">模型</span>
+          <span class="node n3">碳储</span>
+          <span class="node n4">解释</span>
+        </div>
+      </template>
+    </PageHero>
 
-  <div class="carbon-trace-container">
+    <section class="process-grid">
+      <article v-for="step in steps" :key="step.title" class="reveal-card">
+        <span>{{ step.index }}</span>
+        <h2>{{ step.title }}</h2>
+        <p>{{ step.desc }}</p>
+      </article>
+    </section>
 
-    <!-- 标题区域 -->
-    <div class="intro-section animate__animated animate__fadeInDown">
-      <h1 class="main-title">碳溯 · 智能碳汇决策中枢</h1>
-      <p class="sub-title">Trace Carbon · Predict Structure · Empower Decisions</p>
-    </div>
+    <section class="panel map-panel">
+      <SectionHeader title="探索图" eyebrow="Blue Map" subtitle="用于学习区域差异、证据来源和模型解释，支持海南主岛与三沙群岛独立查看">
+        <router-link class="soft-link" to="/visual">打开地图页</router-link>
+      </SectionHeader>
+      <HainanBlueCarbonMap />
+    </section>
 
-    <!-- 功能卡片网格布局 -->
-    <div class="card-grid">
+    <section class="viz-layout">
+      <article class="panel chart-panel">
+        <SectionHeader title="模型解释" eyebrow="Model Flow" subtitle="说明 CatBoost/BAAD 等模型资产的输入、输出、关系图和适用范围，并结合真实输入理解结果">
+          <button class="soft-link ai-open" type="button" @click="openGlobalAssistant">打开 AI 碳助手</button>
+        </SectionHeader>
+        <div ref="chartRef" class="chart"></div>
+      </article>
+      <article class="panel explain-panel">
+        <SectionHeader title="解释重点" eyebrow="Model Notes" />
+        <ul>
+          <li v-for="item in explanations" :key="item">{{ item }}</li>
+        </ul>
+      </article>
+    </section>
 
-      <!-- 核心功能模块 -->
-      <router-link to="/structure-predictor">
-        <FeatureCard icon="🧮" title="结构参数预测器" desc="输入结构特征，预测生物量" tag="核心功能" />
+    <section class="module-grid">
+      <router-link v-for="module in modules" :key="module.title" :to="module.to" class="module-card">
+        <span>{{ module.tag }}</span>
+        <h2>{{ module.title }}</h2>
+        <p>{{ module.desc }}</p>
       </router-link>
-
-      <router-link to="/virtual-plot-designer">
-        <FeatureCard icon="🧪" title="虚拟样地实验设计器" desc="自定义结构变量组，模拟干预后生物量变化" tag="核心功能" />
-      </router-link>
-
-      <router-link to="/carbon-value-converter">
-        <FeatureCard icon="💰" title="碳储-价值转换器" desc="从 m.so → 碳储 → 金额，支持碳价灵活调整" tag="核心功能" />
-      </router-link>
-
-      <!-- 展示功能模块 -->
-      <router-link to="/shap-visualizer">
-        <FeatureCard icon="📊" title="SHAP 可视化解释" desc="展示预测结构变量的贡献度，强化解释性" tag="展示功能" />
-      </router-link>
-
-      <router-link to="/response-curve">
-        <FeatureCard icon="📈" title="响应曲线图" desc="变量变化 vs 生物量趋势曲线，洞察生态机制" tag="展示功能" />
-      </router-link>
-
-      <router-link to="/literature-compare">
-        <FeatureCard icon="📚" title="文献比对模块" desc="将结果与文献区间对照，验证合理性" tag="展示功能" />
-      </router-link>
-
-      <!-- 探索功能模块 -->
-      <router-link to="/ai-assistant">
-        <FeatureCard icon="🤖" title="AI 碳助手" desc="基于私域知识模型，智能解释预测结果" tag="探索功能" />
-      </router-link>
-
-      <router-link to="/param-sensitivity">
-        <FeatureCard icon="🌀" title="参数扰动敏感性分析" desc="±20% 参数扰动模拟，自动展示预测波动区间" tag="探索功能" />
-      </router-link>
-    </div>
-
-    <!-- AI助手功能区域 -->
-    <div class="ai-button" @click="toggleChat">
-      🤖
-    </div>
-
-    <!-- ✅ 遮罩层 -->
-    <div v-if="isChatVisible" ref="backdrop" class="backdrop" @click="closeChat"></div>
-
-    <!-- ✅ Chat对话框 -->
-    <div v-show="isChatVisible" ref="chatModal" class="chat-modal">
-      <CarbonChat :apiUrl="'http://localhost:8088/api/chat'" :visible="isChatVisible" @close="closeChat" />
-    </div>
-
-  </div>
+    </section>
+  </PageShell>
 </template>
 
 <script setup>
-import 'animate.css';
-import FeatureCard from '@/components/FeatureCard.vue'; // 路径根据实际项目结构调整
-import { ref, onMounted, nextTick, computed } from 'vue';
-import CarbonChat from '@/components/CarbonChat.vue';
+import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import * as echarts from "echarts";
+import PageShell from "@/components/common/PageShell.vue";
+import UnifiedNav from "@/components/common/UnifiedNav.vue";
+import PageHero from "@/components/common/PageHero.vue";
+import SectionHeader from "@/components/common/SectionHeader.vue";
+import HainanBlueCarbonMap from "@/components/HainanBlueCarbonMap.vue";
 
-// 响应式状态
-const isChatVisible = ref(false);
-const chatModal = ref(null);
-const backdrop = ref(null);
-const userType = ref('User');
+const chartRef = ref(null);
+let chart = null;
 
-// 计算属性：动态用户信息
-const userCenterLabel = computed(() =>
-  userType.value === 'Admin' ? '用户管理' : '个人中心'
-)
-// 计算属性：动态用户路径
-const userCenterPath = computed(() =>
-  userType.value === 'Admin' ? '/usermanage' : '/userinfo'
-)
+const steps = [
+  { index: "01", title: "理解来源", desc: "查看面积记录、文献证据、遥感指标和区域指标的来源口径" },
+  { index: "02", title: "建立模型", desc: "解释结构变量、生物量和碳储之间的估算关系" },
+  { index: "03", title: "对照证据", desc: "把估算结果放回文献区间和区域记录中理解" },
+  { index: "04", title: "案例推演", desc: "通过参数扰动和情景假设观察结果变化" },
+];
 
-// AI聊天窗口控制
-const toggleChat = async () => {
-  if (isChatVisible.value) {
-    closeChat();
-  } else {
-    isChatVisible.value = true;
-    await nextTick();
-    // 应用动画类名
-    if (chatModal.value) {
-      chatModal.value.classList.add('fade-in');
-      chatModal.value.classList.remove('fade-out');
-    }
-    if (backdrop.value) {
-      backdrop.value.classList.add('backdrop-fade-in');
-      backdrop.value.classList.remove('backdrop-fade-out');
-    }
-  }
-};
+const explanations = [
+  "区分观测事实、参考指标、模型估算和情景推演。",
+  "保留来源、年份、方法和质量信息，避免孤立解释数值。",
+  "碳储价值转换用于教学和参考，不直接等同正式交易价格。",
+  "接口不可用时显示轻量空状态，页面结构保持完整。",
+];
 
-const closeChat = () => {
-  // 移除动画类名
-  if (chatModal.value) {
-    chatModal.value.classList.add('fade-out');
-    chatModal.value.classList.remove('fade-in');
-  }
-  if (backdrop.value) {
-    backdrop.value.classList.add('backdrop-fade-out');
-    backdrop.value.classList.remove('backdrop-fade-in');
-  }
-  // 延迟隐藏确保动画完成
-  setTimeout(() => {
-    isChatVisible.value = false;
-  }, 300);
-};
+const modules = [
+  { tag: "模型", title: "结构参数", desc: "输入结构特征，理解生物量估算过程", to: "/structure-predictor" },
+  { tag: "推演", title: "虚拟样地", desc: "构造参数扰动，观察估算结果变化", to: "/virtual-plot-designer" },
+  { tag: "地图", title: "蓝碳地图", desc: "探索海南区域记录、证据状态和继承详情", to: "/visual" },
+  { tag: "估值", title: "碳储价值", desc: "拆分碳储、碳价和价值参考边界", to: "/carbon-value-converter" },
+  { tag: "证据", title: "文献比对", desc: "把模型结果放回证据区间中理解", to: "/literature-compare" },
+  { tag: "数据", title: "数据资产", desc: "查看公开来源、区域指标和文献证据", to: "/v2-public-data" },
+  { tag: "AI", title: "碳助手", desc: "面向学习解释的问答入口", to: "/ai-assistant" },
+];
 
-// 组件挂载时初始化
-onMounted(() => {
-  // 进入 AboutPage 时，允许垂直滚动
-  document.body.style.overflow = 'auto';
-  document.documentElement.style.overflow = 'auto';
-  userType.value = localStorage.getItem('userType') || 'User'
+function renderChart() {
+  if (!chartRef.value) return;
+  if (!chart) chart = echarts.init(chartRef.value);
+  chart.setOption({
+    tooltip: { trigger: 'item' },
+    series: [{
+      type: 'graph',
+      layout: 'none',
+      roam: false,
+      symbolSize: 72,
+      label: { show: true, color: '#123f37', fontWeight: 900 },
+      edgeSymbol: ['none', 'arrow'],
+      edgeSymbolSize: [4, 12],
+      lineStyle: { color: '#0d6b57', width: 2, curveness: 0.08 },
+      itemStyle: { color: '#dff1ec', borderColor: '#0d6b57', borderWidth: 2 },
+      data: [
+        { name: '结构参数', x: 80, y: 160 },
+        { name: '公开数据', x: 230, y: 80 },
+        { name: 'CatBoost', x: 390, y: 160 },
+        { name: '碳储输出', x: 540, y: 80 },
+        { name: '解释边界', x: 540, y: 240 },
+      ],
+      links: [
+        { source: '结构参数', target: 'CatBoost' },
+        { source: '公开数据', target: 'CatBoost' },
+        { source: 'CatBoost', target: '碳储输出' },
+        { source: 'CatBoost', target: '解释边界' },
+      ],
+    }],
+  }, true);
+}
+function resizeChart() {
+  chart?.resize();
+}
+
+function openGlobalAssistant() {
+  window.dispatchEvent(new CustomEvent("hnblue-open-ai"));
+}
+
+onMounted(async () => {
+  document.documentElement.style.overflow = "auto";
+  document.body.style.overflow = "auto";
+  await nextTick();
+  renderChart();
+  window.addEventListener("resize", resizeChart);
 });
 
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeChart);
+  chart?.dispose();
+});
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap');
-
-/* 主容器样式 */
-.carbon-trace-container {
-  padding: 60px 40px;
-  background: linear-gradient(to bottom right, #0f2027, #203a43, #2c5364);
-  min-height: 100vh;
-  color: white;
+.trace-orbit {
+  position: relative;
+  width: 310px;
+  height: 230px;
+  border: 1px solid var(--hn-border);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ffffff, #e4f3ef);
+  box-shadow: var(--hn-shadow-soft);
 }
 
-/* 标题区域样式 */
-.intro-section {
-  text-align: center;
-  margin-bottom: 50px;
-}
-
-.main-title {
-  font-size: 36px;
-  color: #00ffff;
-  margin-bottom: 10px;
-  text-shadow: 0 0 10px #00ffff;
-}
-
-.sub-title {
-  font-size: 18px;
-  color: #ccc;
-  letter-spacing: 1px;
-}
-
-/* 卡片网格布局 */
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 30px;
-}
-
-/* 导航栏样式 */
-header {
+.trace-orbit::before,
+.trace-orbit::after {
+  content: "";
   position: absolute;
-  top: 0;
-  /* 取消顶部间距 */
-  z-index: 1;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-nav {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 5%;
-  background-color: rgba(255, 255, 255, 0.2);
-  height: 35px;
-  border-bottom-left-radius: 20px;
-  border-bottom-right-radius: 20px;
-  backdrop-filter: blur(5px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-}
-
-/* 导航项样式 */
-nav a {
-  height: 30px;
-  font-size: 20px;
-  font-weight: 500;
-  letter-spacing: 2px;
-  color: rgba(255, 255, 255, 0);
-  width: 110px;
-  text-align: center;
-  padding: 15px 0;
-  border-bottom-left-radius: 20px;
-  border-bottom-right-radius: 20px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.active {
-  background-color: #e1cf459d;
-  color: white;
-}
-
-nav a:hover {
-  background-color: #bcc128de;
-  color: white;
-}
-
-nav:hover>a:not(:hover) {
-  background-color: transparent;
-  color: rgb(185, 171, 201);
-}
-
-@keyframes topIn {
-  from {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-nav {
-  animation: topIn 1.2s ease-out forwards;
-}
-
-/* AI助手按钮样式（碳配色） */
-.ai-button {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  width: 60px;
-  height: 60px;
-  background-color: #1a3e2a;
-  color: #ffffff;
+  inset: 42px;
+  border: 1px dashed rgba(13, 107, 87, 0.28);
   border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 30px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.node {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--hn-accent);
+  color: #fff;
+  font-weight: 900;
+  box-shadow: var(--hn-shadow-soft);
+  animation: bob 4s ease-in-out infinite;
+}
+
+.n1 { left: 28px; top: 28px; }
+.n2 { right: 34px; top: 42px; animation-delay: 0.5s; }
+.n3 { left: 72px; bottom: 28px; animation-delay: 1s; }
+.n4 { right: 58px; bottom: 34px; animation-delay: 1.5s; }
+
+.process-grid,
+.viz-layout,
+.module-grid,
+.map-panel {
+  width: var(--hn-page);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.process-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.process-grid article,
+.panel,
+.module-card {
+  border: 1px solid var(--hn-border);
+  border-radius: 8px;
+  background: var(--hn-panel);
+  box-shadow: var(--hn-shadow-soft);
+}
+
+.process-grid article,
+.panel,
+.module-card {
+  padding: 22px;
+}
+
+.map-panel {
+  margin-top: 18px;
+}
+
+.process-grid span,
+.module-card span,
+.soft-tag,
+.soft-link {
+  color: var(--hn-accent);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.soft-link {
+  text-decoration: none;
+}
+
+.ai-open {
+  border: 0;
+  background: transparent;
   cursor: pointer;
-  transition: background-color 0.3s ease;
-  z-index: 9999;
+  font-family: inherit;
 }
 
-.ai-button:hover {
-  background-color: #2e7049;
+h2 {
+  margin: 12px 0 8px;
+  font-size: 23px;
 }
 
-/* 模态框和遮罩层动画样式 */
-.backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 9997;
-  opacity: 0;
-  pointer-events: none;
+p,
+li {
+  color: var(--hn-muted);
+  line-height: 1.66;
 }
 
-.chat-modal {
-  position: fixed;
-  top: 40%;
-  left: 40%;
-  transform: translate(-50%, -50%);
-  width: 1200px;
-  height: 800px;
-  background-color: #ffffff;
-  border: 1px solid #ccc;
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  z-index: 9998;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  opacity: 0;
-  scale: 0.8;
+.viz-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 16px;
+  margin-top: 18px;
 }
 
-/* 动画定义 */
-.backdrop-fade-in {
-  animation: fadeInBackdrop 0.3s ease forwards;
-  pointer-events: auto;
+.chart {
+  width: 100%;
+  height: 360px;
 }
 
-@keyframes fadeInBackdrop {
-  from {
-    opacity: 0;
+.explain-panel ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.explain-panel li + li {
+  margin-top: 10px;
+}
+
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 18px;
+  padding-bottom: 48px;
+}
+
+.module-card,
+.reveal-card {
+  color: var(--hn-text);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.module-card:hover,
+.reveal-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--hn-shadow);
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+@media (max-width: 900px) {
+  .process-grid,
+  .viz-layout,
+  .module-grid {
+    grid-template-columns: 1fr;
   }
 
-  to {
-    opacity: 1;
-  }
-}
-
-.backdrop-fade-out {
-  animation: fadeOutBackdrop 0.3s ease forwards;
-}
-
-@keyframes fadeOutBackdrop {
-  from {
-    opacity: 1;
-  }
-
-  to {
-    opacity: 0;
-  }
-}
-
-.fade-in {
-  animation: fadeInScale 0.3s ease forwards;
-}
-
-@keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.8);
-  }
-
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-}
-
-.fade-out {
-  animation: fadeOutScale 0.3s ease forwards;
-}
-
-@keyframes fadeOutScale {
-  from {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-
-  to {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.8);
+  .trace-orbit {
+    width: 100%;
   }
 }
 </style>

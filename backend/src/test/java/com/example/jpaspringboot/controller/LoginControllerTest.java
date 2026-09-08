@@ -29,7 +29,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -39,15 +38,12 @@ import java.util.Map;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(classes = JpAspringbootApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = JpAspringbootApplication.class)
 @AutoConfigureMockMvc
 public class LoginControllerTest {
 
     @Autowired
     private MockMvc mockMvc;  // 模拟MVC测试框架，用于发送HTTP请求
-
-    @LocalServerPort
-    private int port;  // 随机端口号，避免测试端口冲突
 
     private final ObjectMapper objectMapper = new ObjectMapper();  // JSON序列化工具
 
@@ -60,12 +56,12 @@ public class LoginControllerTest {
     @Test
     public void testRegister_thenLogin_Success() throws Exception {
         // 生成唯一用户名避免测试数据冲突
-        String randomUsername = "testuser_" + System.currentTimeMillis();
+        String randomUsername = "tu_" + System.currentTimeMillis();
 
         // 构建用户注册请求体
         var registerBody = Map.of(
                 "username", randomUsername,
-                "password", "test123",
+                "password", "test12345",
                 "email", randomUsername + "@example.com",
                 "birthdate", "2000-01-01"
         );
@@ -80,7 +76,7 @@ public class LoginControllerTest {
         // 构建登录请求体
         var loginBody = Map.of(
                 "username", randomUsername,
-                "password", "test123"
+                "password", "test12345"
         );
 
         // 执行用户登录请求并验证认证响应
@@ -111,6 +107,6 @@ public class LoginControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginBody)))
                 .andExpect(status().isUnauthorized())  // 验证HTTP 401未授权状态码
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Login failed")));  // 验证失败消息
+                .andExpect(jsonPath("$.message").exists());  // 验证失败消息
     }
 }

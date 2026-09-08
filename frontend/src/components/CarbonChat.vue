@@ -1,4 +1,4 @@
-<!-- 
+﻿<!--
 AI聊天对话框组件 - 碳汇智能对话系统界面
 
 功能概述：
@@ -86,6 +86,7 @@ import { ref, defineEmits, watch, nextTick, onUnmounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { MdPreview } from 'md-editor-v3';
 import 'md-editor-v3/lib/style.css';
+import { parseAiStreamPayload } from '@/utils/aiStreamParser';
 
 // 组件事件和属性定义
 const emit = defineEmits(['close']);

@@ -1,0 +1,63 @@
+{
+  "dataset": "HNBLUE V2.0 public frontend data sync",
+  "synced_at_utc": "2026-05-27T06:45:58.899027+00:00",
+  "source_dir": "data\\results\\hnblue_v2_public\\normalized",
+  "target_dir": "frontend\\public\\data\\hnblue_v2_public\\normalized",
+  "is_simulated_required": 0,
+  "files": [
+    {
+      "name": "frontend_mangrove_area_timeseries.json",
+      "bytes": 23207,
+      "sha256": "fee92047fc0b512b01d76319bbd909b4b2f24e1beebe72f92a73d0d189ec47d6",
+      "row_count": 11
+    },
+    {
+      "name": "frontend_remote_sensing_metrics.json",
+      "bytes": 58296,
+      "sha256": "28beed0166b5113dc175d303b3e590d41af89bb64f244cf1321bc4288508cec1",
+      "row_count": 147
+    },
+    {
+      "name": "frontend_literature_carbon_cards.json",
+      "bytes": 35623,
+      "sha256": "82cae823a03e162fe3e36f01c94008a96bfc7638fa3d3710b5cf2979a76338f0",
+      "row_count": 73
+    },
+    {
+      "name": "display_mangrove_area_timeseries.csv",
+      "bytes": 113669,
+      "sha256": "e5507329d47e1258378fad5c7661397d09a5ed0ffd8c93a7a0c913bc0f8a3a7b",
+      "row_count": 172
+    },
+    {
+      "name": "display_remote_sensing_metrics.csv",
+      "bytes": 102697,
+      "sha256": "74074c75b2bad78d5ad2c728841836dded0b9a5bbe02c05489abdb00f3ad9864",
+      "row_count": 147
+    },
+    {
+      "name": "display_literature_carbon_records.csv",
+      "bytes": 36139,
+      "sha256": "753f868f5b8f92c6d3eb75d3eb0b12e03b60a6a0753bfd72203eb17d32d1f248",
+      "row_count": 73
+    },
+    {
+      "name": "display_species_allometry_records.csv",
+      "bytes": 8865,
+      "sha256": "c5e871c4bb4e66f3daa88795a9a4ab6125e32b7c3c1352deb15f88e80468c228",
+      "row_count": 22
+    },
+    {
+      "name": "display_data_sources.csv",
+      "bytes": 3206,
+      "sha256": "5f7c6e7bccc44bcfde51f63f968c33d223290172968af842b1a5dfe202e93bc7",
+      "row_count": 9
+    },
+    {
+      "name": "display_region_dictionary.csv",
+      "bytes": 3551,
+      "sha256": "25c73725b59384f4a9788506786d63f114ba428a002d4d4cf59d2b7c3d37ef38",
+      "row_count": 25
+    }
+  ]
+}

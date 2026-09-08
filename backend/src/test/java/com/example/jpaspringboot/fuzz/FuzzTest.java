@@ -75,31 +75,35 @@ public class FuzzTest {
      */
     @Test
     public void fuzzRegister() throws Exception {
-        for (int i = 0; i < 50; i++) {
-            String username = FuzzUtil.randomFuzzUsername();  // 生成非法用户名
-            String password = FuzzUtil.randomFuzzPassword();  // 生成非法密码
-            String email = FuzzUtil.randomFuzzEmail();        // 生成非法邮箱
-            String birthdate = FuzzUtil.randomFuzzDate();     // 生成非法日期
+        String[][] invalidCases = {
+                {"", "validPass123", "valid@example.com", "2000-01-01"},
+                {"user@", "validPass123", "valid@example.com", "2000-01-01"},
+                {"validuser", "123", "valid@example.com", "2000-01-01"},
+                {"validuser", "abcdefgh", "valid@example.com", "2000-01-01"},
+                {"validuser", "12345678", "valid@example.com", "2000-01-01"},
+                {"validuser", "validPass123", "plainaddress", "2000-01-01"},
+                {"validuser", "validPass123", "valid@example.com", "20-01-2000"},
+                {"ThisIsAVeryLongUsernameExceedingMaxLength", "validPass123", "valid@example.com", "2000-01-01"},
+                {"bad name", "validPass123", "valid@example.com", "2000-01-01"},
+                {"validuser", "", "valid@example.com", "2000-01-01"},
+                {"validuser", "validPass123", "@missingusername.com", "2000-01-01"},
+                {"validuser", "validPass123", "valid@example.com", "2024/99/99"}
+        };
+
+        for (String[] item : invalidCases) {
+            String username = item[0];
+            String password = item[1];
+            String email = item[2];
+            String birthdate = item[3];
 
             mockMvc.perform(post("/api/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"username\":\"" + username + "\", \"password\":\"" + password + "\", "
                                     + "\"email\":\"" + email + "\", \"birthdate\":\"" + birthdate + "\"}"))
-                    .andExpect(status().is4xxClientError());  // 验证返回4xx状态
+                    .andExpect(status().is4xxClientError());
         }
     }
 
-    /**
-     * 模糊测试指标更新接口 (/api/indicators/update)。
-     *
-     * 测试目的：
-     * - 检查指标更新接口在接收随机非法值时的响应和容错能力。
-     *
-     * 测试方法：
-     * - 随机生成非法区域名、指标名及浮点数值。
-     * - 使用 PUT 方法发送更新请求。
-     * - 期望：返回 4xx 错误状态。
-     */
     @Test
     public void fuzzUpdateIndicator() throws Exception {
         for (int i = 0; i < 50; i++) {

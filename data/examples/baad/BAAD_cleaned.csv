@@ -1,0 +1,3 @@
+record_id,species,family,latitude,longitude,mat,map,age,h.t,d.bh,a.cp,c.d,vegetation,growingcondition,pft,m.so,source_note
+SYN-BAAD-001,Example mangrove alpha,Exampleaceae,19.60,110.75,24.8,1800,12,5.8,9.2,3.1,0.72,TropRF,FW,tree,18.4,synthetic demo row
+SYN-BAAD-002,Example mangrove beta,Exampleaceae,19.42,110.63,25.1,1650,20,8.4,14.7,4.5,0.81,TropSF,FE,tree,42.7,synthetic demo row

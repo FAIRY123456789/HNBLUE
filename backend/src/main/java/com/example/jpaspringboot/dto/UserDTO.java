@@ -99,8 +99,9 @@ public class UserDTO {
         this.password = password;
     }
 
+    @Override
     public String toString() {
-        return "UserDTO{id = " + id + ", name = " + name + ", password = " + password + "}";
+        return "UserDTO{id=" + id + ", name='" + name + "', password=[PROTECTED], email='" + email + "', birthdate='" + birthdate + "'}";
     }
 
     /**

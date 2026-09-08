@@ -1,0 +1,252 @@
+[
+  {
+    "existing_region_id": 3,
+    "existing_region_name": "全球",
+    "official_region_code": null,
+    "official_region_name": null,
+    "match_type": "unmatched",
+    "match_confidence": "0.0",
+    "manual_review_required": "true",
+    "notes": "Existing region snapshot; site/protected-area records require separate spatial hierarchy review."
+  },
+  {
+    "existing_region_id": 4,
+    "existing_region_name": "海南省",
+    "official_region_code": null,
+    "official_region_name": null,
+    "match_type": "unmatched",
+    "match_confidence": "0.0",
+    "manual_review_required": "true",
+    "notes": "Existing region snapshot; site/protected-area records require separate spatial hierarchy review."
+  },
+  {
+    "existing_region_id": 5,
+    "existing_region_name": "海南岛-东方",
+    "official_region_code": null,
+    "official_region_name": null,
+    "match_type": "unmatched",
+    "match_confidence": "0.0",
+    "manual_review_required": "true",
+    "notes": "Existing region snapshot; site/protected-area records require separate spatial hierarchy review."
+  },
+  {
+    "existing_region_id": 6,
+    "existing_region_name": "海南岛-东寨港",
+    "official_region_code": null,
+    "official_region_name": null,
+    "match_type": "unmatched",
+    "match_confidence": "0.0",
+    "manual_review_required": "true",
+    "notes": "Existing region snapshot; site/protected-area records require separate spatial hierarchy review."
+  },
+  {
+    "existing_region_id": 7,
+    "existing_region_name": "海南岛-冠南",
+    "official_region_code": null,
+    "official_region_name": null,
+    "match_type": "unmatched",
+    "match_confidence": "0.0",
+    "manual_review_required": "true",
+    "notes": "Existing region snapshot; site/protected-area records require separate spatial hierarchy review."
+  },
+  {
+    "existing_region_id": 8,
+    "existing_region_name": "海南岛-花场湾",
+    "official_region_code": null,
+    "official_region_name": null,
+    "match_type": "unmatched",
+    "match_confidence": "0.0",
+    "manual_review_required": "true",
+    "notes": "Existing region snapshot; site/protected-area records require separate spatial hierarchy review."
+  },
+  {
+    "existing_region_id": 9,
+    "existing_region_name": "海南岛-会文",
+    "official_region_code": null,
+    "official_region_name": null,
+    "match_type": "unmatched",
+    "match_confidence": "0.0",
+    "manual_review_required": "true",
+    "notes": "Existing region snapshot; site/protected-area records require separate spatial hierarchy review."
+  },
+  {
+    "existing_region_id": 10,
+    "existing_region_name": "海南岛",
+    "official_region_code": null,
+    "official_region_name": null,
+    "match_type": "unmatched",
+    "match_confidence": "0.0",
+    "manual_review_required": "true",
+    "notes": "Existing region snapshot; site/protected-area records require separate spatial hierarchy review."
+  },
+  {
+    "existing_region_id": 11,
+    "existing_region_name": "海南岛-马袅港",
+    "official_region_code": null,
+    "official_region_name": null,
+    "match_type": "unmatched",
+    "match_confidence": "0.0",
+    "manual_review_required": "true",
+    "notes": "Existing region snapshot; site/protected-area records require separate spatial hierarchy review."
+  },
+  {
+    "existing_region_id": 12,
+    "existing_region_name": "海南岛-铺前",
+    "official_region_code": null,
+    "official_region_name": null,
+    "match_type": "unmatched",
+    "match_confidence": "0.0",
+    "manual_review_required": "true",
+    "notes": "Existing region snapshot; site/protected-area records require separate spatial hierarchy review."
+  },
+  {
+    "existing_region_id": 13,
+    "existing_region_name": "海南岛-新英港",
+    "official_region_code": null,
+    "official_region_name": null,
+    "match_type": "unmatched",
+    "match_confidence": "0.0",
+    "manual_review_required": "true",
+    "notes": "Existing region snapshot; site/protected-area records require separate spatial hierarchy review."
+  },
+  {
+    "existing_region_id": 14,
+    "existing_region_name": "海南岛-洋浦港",
+    "official_region_code": null,
+    "official_region_name": null,
+    "match_type": "unmatched",
+    "match_confidence": "0.0",
+    "manual_review_required": "true",
+    "notes": "Existing region snapshot; site/protected-area records require separate spatial hierarchy review."
+  },
+  {
+    "existing_region_id": 15,
+    "existing_region_name": "文昌市",
+    "official_region_code": 469005,
+    "official_region_name": "文昌市",
+    "match_type": "exact",
+    "match_confidence": 1.0,
+    "manual_review_required": "false",
+    "notes": "Mapped to current MCA county-level name/code."
+  },
+  {
+    "existing_region_id": 16,
+    "existing_region_name": "文昌八门湾自然保护区",
+    "official_region_code": null,
+    "official_region_name": null,
+    "match_type": "unmatched",
+    "match_confidence": "0.0",
+    "manual_review_required": "true",
+    "notes": "Existing region snapshot; site/protected-area records require separate spatial hierarchy review."
+  },
+  {
+    "existing_region_id": 17,
+    "existing_region_name": "万宁市",
+    "official_region_code": 469006,
+    "official_region_name": "万宁市",
+    "match_type": "exact",
+    "match_confidence": 1.0,
+    "manual_review_required": "false",
+    "notes": "Mapped to current MCA county-level name/code."
+  },
+  {
+    "existing_region_id": 18,
+    "existing_region_name": "三亚市",
+    "official_region_code": 460200,
+    "official_region_name": "三亚市",
+    "match_type": "exact",
+    "match_confidence": 1.0,
+    "manual_review_required": "false",
+    "notes": "Mapped to current MCA county-level name/code."
+  },
+  {
+    "existing_region_id": 19,
+    "existing_region_name": "东方市",
+    "official_region_code": 469007,
+    "official_region_name": "东方市",
+    "match_type": "exact",
+    "match_confidence": 1.0,
+    "manual_review_required": "false",
+    "notes": "Mapped to current MCA county-level name/code."
+  },
+  {
+    "existing_region_id": 20,
+    "existing_region_name": "临高县",
+    "official_region_code": 469024,
+    "official_region_name": "临高县",
+    "match_type": "exact",
+    "match_confidence": 1.0,
+    "manual_review_required": "false",
+    "notes": "Mapped to current MCA county-level name/code."
+  },
+  {
+    "existing_region_id": 21,
+    "existing_region_name": "乐东县",
+    "official_region_code": 469027,
+    "official_region_name": "乐东黎族自治县",
+    "match_type": "alias",
+    "match_confidence": "0.86",
+    "manual_review_required": "true",
+    "notes": "Mapped to current MCA county-level name/code."
+  },
+  {
+    "existing_region_id": 22,
+    "existing_region_name": "儋州市",
+    "official_region_code": 460400,
+    "official_region_name": "儋州市",
+    "match_type": "exact",
+    "match_confidence": 1.0,
+    "manual_review_required": "false",
+    "notes": "Mapped to current MCA county-level name/code."
+  },
+  {
+    "existing_region_id": 23,
+    "existing_region_name": "昌江县",
+    "official_region_code": 469026,
+    "official_region_name": "昌江黎族自治县",
+    "match_type": "alias",
+    "match_confidence": "0.86",
+    "manual_review_required": "true",
+    "notes": "Mapped to current MCA county-level name/code."
+  },
+  {
+    "existing_region_id": 24,
+    "existing_region_name": "海口市",
+    "official_region_code": 460100,
+    "official_region_name": "海口市",
+    "match_type": "exact",
+    "match_confidence": 1.0,
+    "manual_review_required": "false",
+    "notes": "Mapped to current MCA county-level name/code."
+  },
+  {
+    "existing_region_id": 25,
+    "existing_region_name": "澄迈县",
+    "official_region_code": 469023,
+    "official_region_name": "澄迈县",
+    "match_type": "exact",
+    "match_confidence": 1.0,
+    "manual_review_required": "false",
+    "notes": "Mapped to current MCA county-level name/code."
+  },
+  {
+    "existing_region_id": 26,
+    "existing_region_name": "琼海市",
+    "official_region_code": 469002,
+    "official_region_name": "琼海市",
+    "match_type": "exact",
+    "match_confidence": 1.0,
+    "manual_review_required": "false",
+    "notes": "Mapped to current MCA county-level name/code."
+  },
+  {
+    "existing_region_id": 27,
+    "existing_region_name": "陵水县",
+    "official_region_code": 469028,
+    "official_region_name": "陵水黎族自治县",
+    "match_type": "alias",
+    "match_confidence": "0.86",
+    "manual_review_required": "true",
+    "notes": "Mapped to current MCA county-level name/code."
+  }
+]

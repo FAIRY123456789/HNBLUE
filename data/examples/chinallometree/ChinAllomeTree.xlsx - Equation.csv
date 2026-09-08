@@ -1,0 +1,3 @@
+equation_id,species,component,equation_form,coefficient_a,coefficient_b,r2,unit,reference
+SYN-EQ-001,Example tree alpha,aboveground,a*DBH^b,0.12,2.31,0.91,kg,SYN-REF-001
+SYN-EQ-002,Example tree beta,aboveground,a*DBH^b,0.15,2.27,0.89,kg,SYN-REF-002

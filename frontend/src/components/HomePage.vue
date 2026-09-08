@@ -1,505 +1,424 @@
-<!-- 
-首页组件 - 海南蓝碳数字化应用系统入口页面
-
-功能概述：
-• 系统导航和用户身份动态显示
-• 退出登录功能（含确认模态框）
-• 系统介绍和入口引导
-• 响应式设计和动画效果
-
-主要特性：
-• 动态导航：根据用户类型显示不同用户中心入口
-• 安全退出：带确认提示的退出登录流程
-• 视觉设计：背景图片、毛玻璃导航、动画过渡
-• 路由控制：登录状态管理和页面跳转
--->
 <template>
-  <div class="home-page">
-    <!-- 顶部导航栏 -->
-    <header>
-      <nav>
-        <router-link class="nav-items active" to="/">首页</router-link>
-        <router-link class="nav-items" to="/about">关于</router-link>
-        <router-link class="nav-items" to="/visual">地图</router-link>
-        <router-link class="nav-items" to="/carbonseek">碳溯</router-link>
-        <!-- 动态用户中心入口 -->
-        <router-link class="nav-items" :to="userCenterPath">{{ userCenterLabel }}</router-link>
-      </nav>
-      <!-- 退出登录按钮 -->
-      <div class="logout-btn" @click="showLogoutConfirm = true">
-        退出
-      </div>
-    </header>
-
-    <!-- 退出确认模态框 - 使用teleport挂载到body -->
-    <teleport to="body">
-      <div v-if="showLogoutConfirm" class="logout-modal">
-        <div class="logout-modal-content">
-          <h4>确认退出登录？</h4>
-          <div class="logout-actions">
-            <button @click="confirmLogout">确认</button>
-            <button @click="cancelLogout">取消</button>
+  <PageShell>
+    <section class="home-hero" @mousemove="moveHero" @mouseleave="resetHero">
+      <UnifiedNav variant="light" />
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow">Blue Carbon Platform</p>
+          <h1>海南蓝碳评估分析与数字化应用平台</h1>
+          <p class="lead">
+            汇聚红树林面积、区域指标、文献碳储与来源证据，形成面向政府管理、公众认知、科研评估和第三方查验的统一平台入口。
+          </p>
+          <div class="hero-actions" aria-label="首页快捷入口">
+            <router-link class="home-action-button home-action-button--primary" to="/v2-public-data">查看数据资产</router-link>
+            <router-link class="home-action-button home-action-button--secondary" to="/v2-government">进入政府端</router-link>
+            <SystemGuideButton class="home-action-button home-action-button--guide" @open="guideOpen = true" />
           </div>
         </div>
-      </div>
-    </teleport>
 
-    <!-- 主内容区域 -->
-    <div class="content">
-      <!-- 标题区域 -->
-      <div class="title">
-        <h3>海南蓝碳数字化应用系统</h3>
-        <h1>海南</h1>
+        <figure class="photo-panel" :style="panelStyle" aria-label="海南红树林湿地实景主视觉">
+          <img :src="heroImage" alt="海南红树林湿地与栈道" />
+          <figcaption>
+            <span>海南红树林湿地</span>
+            <strong>蓝碳资源数字化治理</strong>
+          </figcaption>
+          <div class="photo-shade"></div>
+
+          <div class="floating-card card-a"><strong>294</strong><span>区域指标</span></div>
+          <div class="floating-card card-b"><strong>70</strong><span>文献证据</span></div>
+          <div class="floating-card card-c"><strong>96</strong><span>面积记录</span></div>
+        </figure>
       </div>
-      <!-- 系统介绍文本 -->
-      <div class="info-wrap">
-        <p>
-          位于中国南部的海南蓝碳生态系统，在气候调节和生物多样性保护方面发挥着至关重要的作用。它包含了红树林、海草床和盐沼，这些都有效地捕获二氧化碳，保护海岸区域，并支持海洋生命。
-        </p>
-      </div>
-      <!-- 行动召唤按钮 -->
-      <div class="cta">
-        <router-link to="/login">
-          <button>
-            探索更多➡
-          </button>
-        </router-link>
-      </div>
-    </div>
-  </div>
+    </section>
+
+    <section class="stat-row">
+      <StatCard v-for="item in stats" :key="item.label" :label="item.label" :value="item.value" :unit="item.unit" :note="item.note" :tags="item.tags" />
+    </section>
+
+    <section class="entry-grid">
+      <router-link v-for="entry in entries" :key="entry.title" :to="entry.to" class="entry-card">
+        <span>{{ entry.name }}</span>
+        <h2>{{ entry.title }}</h2>
+        <p>{{ entry.desc }}</p>
+        <b>{{ entry.action }}</b>
+      </router-link>
+    </section>
+
+    <SystemGuideModal :open="guideOpen" @close="guideOpen = false" />
+  </PageShell>
 </template>
 
 <script>
+import PageShell from "@/components/common/PageShell.vue";
+import UnifiedNav from "@/components/common/UnifiedNav.vue";
+import StatCard from "@/components/common/StatCard.vue";
+import SystemGuideButton from "@/components/home/SystemGuideButton.vue";
+import SystemGuideModal from "@/components/guide/SystemGuideModal.vue";
+import heroImage from "@/assets/hero-mangrove.webp";
+
 export default {
-  name: 'HomePage',
+  name: "HomePage",
+  components: { PageShell, UnifiedNav, StatCard, SystemGuideButton, SystemGuideModal },
   data() {
     return {
-      showLogoutConfirm: false,  // 控制退出确认模态框显示
-      userType: 'User' // 用户类型，默认普通用户
+      heroImage,
+      guideOpen: false,
+      tiltX: 0,
+      tiltY: 0,
+      stats: [
+        { value: "68", unit: "项", label: "可信数据来源", note: "覆盖公开遥感、权威机构资料、同行评审文献与模型基础数据", tags: ["来源核验", "公开查验"] },
+        { value: "294", unit: "条", label: "区域观察与评价指标", note: "用于区域比较、变化识别、生态状态分析和治理研判", tags: ["区域比较", "状态分析"] },
+        { value: "199", unit: "项", label: "标准化指标体系", note: "统一指标名称、单位、统计口径和来源说明", tags: ["统一口径", "降低误读"] },
+        { value: "数据治理 · 模型估算 · 存储服务 · 知识问答", unit: "", label: "多源数据协同底座", note: "支撑数据查询、来源核验、模型分析与辅助解释", tags: ["协同查询", "辅助解释"] },
+      ],
+      entries: [
+        { name: "CarbonSeek", title: "碳溯", desc: "红树林覆盖与指标查询、碳储估算和模型解释", action: "进入碳溯", to: "/carbonseek" },
+        { name: "DataAssets", title: "数据资产", desc: "来源追溯、文献证据、区域指标和面积记录", action: "浏览数据资产", to: "/v2-public-data" },
+        { name: "Governance", title: "治理工作台", desc: "面向管理人员的筛选、追溯、管理和研判", action: "进入工作台", to: "/v2-government" },
+        { name: "About", title: "关于项目", desc: "平台定位、数据基础、适用范围和查验边界", action: "查看说明", to: "/about" },
+      ],
     };
   },
   computed: {
-    /**
-     * 动态用户中心标签文字
-     * 管理员显示"用户管理"，普通用户显示"个人中心"
-     */
-    userCenterLabel() {
-      return this.userType === 'Admin' ? '用户管理' : '个人中心';
+    panelStyle() {
+      return { transform: `perspective(900px) rotateX(${this.tiltY}deg) rotateY(${this.tiltX}deg)` };
     },
-    /**
-     * 动态用户中心路由路径
-     * 管理员跳转到用户管理页面，普通用户跳转到个人信息页面
-     */
-    userCenterPath() {
-      return this.userType === 'Admin' ? '/usermanage' : '/userinfo';
-    }
-  },
-  methods: {
-    /**
-     * 确认退出登录
-     * 清除本地存储的token和用户类型，跳转到登录页
-     */
-    openLogoutModal() {
-      this.showLogoutConfirm = true;
-    },
-    confirmLogout() {
-      localStorage.removeItem('token');
-      localStorage.removeItem('userType');
-      this.showLogoutConfirm = false;
-      this.$router.push({ name: 'Login' }); // 跳转登录页
-    },
-    /**
-     * 取消退出操作
-     * 关闭确认模态框
-     */
-    cancelLogout() {
-      this.showLogoutConfirm = false;
-    }
   },
   mounted() {
-    /**
-     * 组件挂载时设置页面滚动状态
-     * 从本地存储读取用户类型信息
-     */
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-    this.userType = localStorage.getItem('userType') || 'User'; // 从本地读取身份
+    document.documentElement.style.overflow = "auto";
+    document.body.style.overflow = "auto";
   },
-  beforeUnmount() {
-    /**
-     * 组件销毁前恢复页面滚动状态
-     * 避免影响其他页面
-     */
-    document.documentElement.style.overflow = '';
-    document.body.style.overflow = '';
-  }
+  methods: {
+    moveHero(event) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width - 0.5;
+      const y = (event.clientY - rect.top) / rect.height - 0.5;
+      this.tiltX = x * 3.2;
+      this.tiltY = y * -2.6;
+    },
+    resetHero() {
+      this.tiltX = 0;
+      this.tiltY = 0;
+    },
+  },
 };
 </script>
 
-
 <style scoped>
-/* 导入字体和图标库 */
-@import "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css";
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
-/* 全局样式重置 */
-:global(html),
-:global(body) {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  overflow: hidden;  /* 禁止页面滚动 */
+.home-hero {
+  min-height: 640px;
+  background:
+    radial-gradient(circle at 76% 16%, rgba(87, 210, 190, 0.18), transparent 28%),
+    linear-gradient(145deg, var(--hn-bg-soft) 0%, var(--hn-bg) 58%, var(--hn-bg-soft) 100%);
 }
-/* 主容器样式 - 背景图片设置 */
-.home-page {
-  background-image: url('~@/assets/bac4.png') !important;
-  background-size: cover !important;
-  background-position: top !important;
-  background-repeat: no-repeat !important;
-  overflow: hidden;
-  min-height: 100vh;
-}
-/* 背景图片 */
-.content img {
-  position: absolute;
-  bottom: 0%;
-}
-/* 头部导航栏样式 */
-header {
-  position: absolute;
-  top: 0;
-  /* 取消顶部间距 */
-  z-index: 1;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-/* 导航菜单样式 - 毛玻璃效果 */
-nav {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 5%;
-  background-color: rgba(255, 255, 255, 0.2);
-  height: 35px;
-  border-bottom-left-radius: 20px;
-  border-bottom-right-radius: 20px;
-  backdrop-filter: blur(5px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-}
-/* 导航项基础样式 */
-nav a {
-  height: 30px;
-  font-size: 20px;
-  font-weight: 500;
-  letter-spacing: 2px;
-  color: rgb(53, 53, 53);
-  width: 110px;
-  text-align: center;
-  padding: 15px 0;
-  border-bottom-left-radius: 20px;
-  border-bottom-right-radius: 20px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-/* 激活状态样式 */
-.active {
-  background-color: #16423c;
-  color: white;
-}
-/* 导航项悬停效果 */
-nav a:hover {
-  background-color: #16423c;
-  color: white;
-}
-nav:hover>a:not(:hover) {
-  background-color: transparent;
-  color: rgb(53, 53, 53);
-}
-/* 标题区域样式 */
-.title {
-  position: absolute;
-  top: 35%;
-  right: 50%;
-  transform: translate(50%, -50%);
 
+.hero-inner {
+  width: var(--hn-page);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 0.98fr) minmax(390px, 1.02fr);
+  gap: 44px;
+  align-items: center;
+  padding: 36px 0 58px;
 }
-.title h3 {
-  font-size: 30px;
-  font-weight: 100;
-  letter-spacing: 10px;
-  color: rgb(4, 35, 25);
-  text-align: center;
-  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.429);
-}
-.title h1 {
-  font-size: 240px;
-  font-weight: 580;
-  letter-spacing: 25px;
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: var(--hn-accent);
+  font-size: 13px;
+  font-weight: 900;
   text-transform: uppercase;
-  color: white;
-  text-align: center;
-  margin: -5px 0;
-  margin-left: 10px;
-  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.429);
 }
-/* 介绍文本样式 */
-p {
-  font-size: 21px;
-  letter-spacing: 1px;
-  line-height: 1.8;
-  color: rgba(255, 255, 255, 0.7);
-  width: 70%;
-  text-align: center;
-  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.429);
+
+h1 {
+  margin: 0;
+  max-width: 820px;
+  color: var(--hn-text);
+  font-size: clamp(34px, 4vw, 54px);
+  line-height: 1.14;
+  letter-spacing: 0;
 }
-.info-wrap {
-  width: 100%;
+
+.lead {
+  max-width: 700px;
+  margin: 20px 0 0;
+  color: var(--hn-muted);
+  font-size: 18px;
+  line-height: 1.78;
+}
+
+.hero-actions {
   display: flex;
-  justify-content: center;
-  position: absolute;
-  bottom: 18%;
-  z-index: 1;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 30px;
 }
-/* 行动召唤按钮区域 */
-.cta {
-  position: absolute;
-  bottom: 8%;
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  z-index: 1;
-}
-.cta button {
-  font-size: 20px;
-  font-weight: 40;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.8);
-  background-color: transparent;
-  border: 2px solid rgba(255, 255, 255, 0.8);
-  border-radius: 50px;
-  height: 45px;
-  width: 220px;
-  display: flex;
+
+.home-action-button {
+  width: 160px;
+  min-width: 160px;
+  height: 46px;
+  min-height: 46px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: all 0.2s;
-  cursor: pointer;
-  animation: bottomInText 1.2s ease-out forwards;
-  animation-delay: 0.3s;
-  opacity: 0;
-}
-.cta button:hover {
-  background-color: rgba(255, 255, 255, 0.8);
-  color: rgb(53, 53, 53);
-}
-.slider {
-  position: absolute;
-  top: 50%;
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-}
-.slider i {
-  padding: 0 5%;
-  font-size: 36px;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-/* 海南项目 */
-.hainan-projects {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-}
-.project-card {
-  background-color: rgba(255, 255, 255, 0.2);
-  padding: 15px;
+  padding: 0 18px;
   border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
 }
-.project-card:hover {
-  background-color: rgba(255, 255, 255, 0.4);
-}
-/* 鼠标悬停展示的图片 */
-.project-image {
-  margin-top: 30px;
-}
-.project-image img {
-  max-width: 100%;
-  height: auto;
-  display: none;
-  /* 初始隐藏 */
-}
-/* 登录注册 */
-.modal {
-  display: none;
-  /* 默认隐藏 */
-  position: fixed;
-  /* 固定定位 */
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
-  /* 半透明黑色背景 */
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  /* 高层级以覆盖其他内容 */
-}
-.modal-content {
-  background-color: white;
-  padding: 20px;
-  border-radius: 10px;
-  width: 90%;
-  max-width: 400px;
-  /* 限制最大宽度 */
-  text-align: center;
-}
-.close-button {
-  cursor: pointer;
-  position: absolute;
-  top: 10px;
-  right: 10px;
-}
-.logout-btn {
-  position: absolute;
-  right: 60px;
-  top: 10px;
-  background: transparent;
-  /* 去掉背景 */
-  color: black;
-  /* 保留字体颜色 */
-  font-size: 18px;
-  border: none;
-  /* 去掉边框 */
-  cursor: pointer;
-  transition: color 0.3s ease;
-  z-index: 10000;
-}
-.logout-btn:hover {
-  color: #0a3f38;
-  text-decoration: underline;
-}
-.logout-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-.logout-modal-content {
-  background: #fff;
-  padding: 30px;
-  border-radius: 10px;
-  width: 300px;
-  text-align: center;
-}
-.logout-actions {
-  margin-top: 20px;
-  display: flex;
-  justify-content: space-around;
-}
-.logout-actions button {
-  padding: 8px 20px;
-  border: none;
-  border-radius: 6px;
-  background-color: #244b7d;
+
+.home-action-button--primary {
+  border: 1px solid var(--hn-accent);
+  background: var(--hn-accent);
   color: #fff;
-  cursor: pointer;
-}
-.logout-actions button:hover {
-  background-color: #3b5fa6;
+  box-shadow: 0 12px 24px rgba(13, 107, 87, 0.16);
 }
 
-/* 动画定义 */
-@keyframes bottomIn {
-  from {
-    transform: translateY(200px);
-  }
-
-  to {
-    transform: translateY(0);
-  }
-}
-.back-1 {
-  animation: bottomIn 1s ease-out forwards;
-}
-.back-2 {
-  animation: bottomIn 1.3s ease-out forwards;
-}
-.back-3 {
-  animation: bottomIn 1.5s ease-out forwards;
-}
-@keyframes bottomInText {
-  from {
-    transform: translateY(500px);
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-h3 {
-  animation: bottomInText 1s ease-out forwards;
-}
-h1 {
-  animation: bottomInText 1.2s ease-out forwards;
-}
-p {
-  animation: bottomInText 1.2s ease-out forwards;
-  animation-delay: 0.2s;
-  opacity: 0;
-}
-@keyframes backgroundImage {
-  from {
-    background-position: top;
-  }
-
-  to {
-    background-position: 50% 14%;
-  }
-}
-body {
-  animation: backgroundImage 1.6s ease-out forwards;
-}
-@keyframes topIn {
-  from {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-nav {
-  animation: topIn 1.2s ease-out forwards;
-}
-@keyframes zoomOut {
-  from {
-    transform: scale(1.5);
-    opacity: 0;
-  }
-
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-.slider {
-  animation: zoomOut 1.2s ease-out forwards;
+.home-action-button--secondary {
+  border: 1px solid var(--hn-border-strong);
+  background: var(--hn-panel);
+  color: var(--hn-accent);
+  box-shadow: var(--hn-shadow-soft);
 }
 
+.home-action-button--primary,
+.home-action-button--secondary {
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.home-action-button--primary:hover,
+.home-action-button--secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(10, 104, 89, 0.16);
+}
+
+.home-action-button--primary:active,
+.home-action-button--secondary:active {
+  transform: translateY(0);
+  box-shadow: 0 7px 16px rgba(10, 104, 89, 0.11);
+}
+
+.photo-panel {
+  position: relative;
+  height: clamp(340px, 46vw, 430px);
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--hn-border);
+  border-radius: 8px;
+  background: var(--hn-card);
+  box-shadow: 0 30px 78px rgba(12, 73, 63, 0.16), 0 0 90px rgba(31, 138, 122, 0.12);
+  transition: transform 0.18s ease;
+  isolation: isolate;
+}
+
+.photo-panel::before {
+  content: "";
+  position: absolute;
+  inset: -34px;
+  z-index: -1;
+  background: radial-gradient(circle at 50% 48%, rgba(31, 138, 122, 0.22), transparent 66%);
+  filter: blur(18px);
+}
+
+.photo-panel img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(1.03) contrast(1.02);
+}
+
+.photo-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(5, 42, 36, 0.32), transparent 52%), linear-gradient(180deg, transparent 42%, rgba(5, 42, 36, 0.56));
+}
+
+figcaption {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
+  z-index: 2;
+  display: grid;
+  gap: 6px;
+  color: #fff;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
+}
+
+figcaption span {
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+figcaption strong {
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+.floating-card {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  gap: 2px;
+  min-width: 118px;
+  padding: 13px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--hn-shadow-soft);
+  animation: float 5s ease-in-out infinite;
+}
+
+.floating-card strong {
+  color: #0d6b57;
+  font-size: 27px;
+}
+
+.floating-card span {
+  color: #31584f;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.card-a { right: 24px; top: 30px; }
+.card-b { right: 34px; top: 132px; animation-delay: 0.8s; }
+.card-c { left: 28px; top: 92px; animation-delay: 1.5s; }
+
+.stat-row,
+.entry-grid {
+  width: var(--hn-page);
+  margin: 22px auto;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.entry-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  padding-bottom: 54px;
+}
+
+.entry-card {
+  min-height: 230px;
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  border: 1px solid var(--hn-border);
+  border-radius: 8px;
+  background: var(--hn-panel);
+  box-shadow: var(--hn-shadow-soft);
+  color: var(--hn-text);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.entry-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--hn-shadow);
+}
+
+.entry-card span {
+  color: var(--hn-accent);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.entry-card h2 {
+  margin: 16px 0 8px;
+  font-size: 24px;
+}
+
+.entry-card p {
+  flex: 1;
+  margin: 0 0 18px;
+  color: var(--hn-muted);
+  line-height: 1.65;
+}
+
+.entry-card b {
+  color: var(--hn-accent);
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@media (max-width: 940px) {
+  .hero-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-row,
+  .entry-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .photo-panel {
+    height: 360px;
+  }
+
+  .hero-actions {
+    align-items: stretch;
+  }
+
+  .home-action-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .stat-row,
+  .entry-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+:global(:root[data-hn-theme="dark"]) .home-action-button--primary,
+:global(:root.theme-dark) .home-action-button--primary {
+  color: #08201c;
+}
+
+:global(:root[data-hn-theme="dark"]) .home-action-button--secondary,
+:global(:root.theme-dark) .home-action-button--secondary {
+  background: var(--hn-panel);
+  border-color: var(--hn-border-strong);
+  color: var(--hn-accent);
+}
+
+:global(:root[data-hn-theme="dark"]) .photo-panel,
+:global(:root.theme-dark) .photo-panel {
+  box-shadow: 0 34px 86px rgba(0, 0, 0, 0.34), 0 0 82px rgba(124, 226, 205, 0.1);
+}
+
+:global(:root[data-hn-theme="dark"]) .photo-shade,
+:global(:root.theme-dark) .photo-shade {
+  background: linear-gradient(90deg, rgba(2, 18, 20, 0.62), transparent 54%), linear-gradient(180deg, rgba(2, 18, 20, 0.08), rgba(2, 18, 20, 0.76));
+}
+
+:global(:root[data-hn-theme="dark"]) .floating-card,
+:global(:root.theme-dark) .floating-card {
+  border-color: rgba(176, 225, 214, 0.22);
+  background: rgba(14, 45, 49, 0.78);
+}
+
+:global(:root[data-hn-theme="dark"]) .floating-card strong,
+:global(:root[data-hn-theme="dark"]) .floating-card span,
+:global(:root.theme-dark) .floating-card strong,
+:global(:root.theme-dark) .floating-card span {
+  color: var(--hn-text);
+}
 </style>

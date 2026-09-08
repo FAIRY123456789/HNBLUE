@@ -1,0 +1,15 @@
+﻿+----------------------------+-----------+
+| table_name                 | row_count |
++----------------------------+-----------+
+| t_data_source              |         9 |
+| t_region                   |        25 |
+| t_satellite_mangrove_cover |        66 |
+| t_satellite_region_metric  |         0 |
+| t_literature_carbon_record |         0 |
+| t_allometry_equation       |         0 |
++----------------------------+-----------+
++--------------+-------------+-------------+
+| TABLE_SCHEMA | table_count | approx_rows |
++--------------+-------------+-------------+
+| hnblue       |          13 |        4804 |
++--------------+-------------+-------------+

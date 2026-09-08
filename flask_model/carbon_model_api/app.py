@@ -34,6 +34,8 @@ from flask import Flask, request, Response, jsonify, send_from_directory
 import json
 from predict_service import predict_carbon_stock, batch_predict_carbon_stock, sensitivity_analysis, save_sensitivity_plot, explain_sensitivity
 from flask_cors import CORS  # 引入 CORS 支持
+import os
+from pathlib import Path
 
 # Flask 应用对象
 app = Flask(__name__)
@@ -74,7 +76,9 @@ def batch_predict():
 def literature_range():
     import pandas as pd
     try:
-        df = pd.read_csv("../BAAD_cleaned.csv")  # 路径视部署位置调整
+        default_baad = Path(__file__).resolve().parents[2] / "data" / "examples" / "baad" / "BAAD_cleaned.csv"
+        baad_file = Path(os.getenv("HNBLUE_BAAD_FILE", str(default_baad))).expanduser().resolve()
+        df = pd.read_csv(baad_file)
         if "m.so" not in df.columns:
             return jsonify({"error": "字段 m.so 不存在"}), 400
 
@@ -94,7 +98,7 @@ def literature_range():
         # 打印日志到终端，方便检查
         print("碳储量统计区间（单位：tC/ha）")
         for k, v in result.items():
-            print(f"🔹 {k}: {v}")
+            print(f"- {k}: {v}")
 
         return jsonify(result)
     except Exception as e:

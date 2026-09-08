@@ -27,7 +27,6 @@ import com.example.jpaspringboot.JpAspringbootApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -35,7 +34,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.hamcrest.Matchers.*;
 
-@SpringBootTest(classes = JpAspringbootApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = JpAspringbootApplication.class)
 @AutoConfigureMockMvc
 public class DevisualControllerTest {
 
@@ -44,9 +43,6 @@ public class DevisualControllerTest {
     private MockMvc mockMvc;
 
     // 随机端口号，避免测试环境冲突
-    @LocalServerPort
-    private int port;
-
     /**
      * 区域数据查询接口集成测试
      *

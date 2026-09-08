@@ -37,9 +37,11 @@ import matplotlib
 matplotlib.use('Agg')  # 使用非图形化的后端
 import os
 import uuid
+from pathlib import Path
 
 # 加载训练好的 pipeline（预处理器 + 模型）
-model = joblib.load("catboost_pipeline.pkl")
+MODEL_PATH = Path(__file__).resolve().parent / "catboost_pipeline.pkl"
+model = joblib.load(MODEL_PATH)
 
 # 单样本预测
 def predict_carbon_stock(input_dict):
@@ -110,18 +112,21 @@ def sensitivity_analysis(base_input):
 
         # -20%
         varied_input[key] = base_value * 0.8
-        lower = predict_carbon_stock(varied_input)
+        decreased_prediction = predict_carbon_stock(varied_input)
 
         # +20%
         varied_input[key] = base_value * 1.2
-        upper = predict_carbon_stock(varied_input)
+        increased_prediction = predict_carbon_stock(varied_input)
+
+        lower = min(decreased_prediction, increased_prediction)
+        upper = max(decreased_prediction, increased_prediction)
 
         results.append({
             "param": key,
             "base": base_value,
             "lower": round(lower, 3),
             "upper": round(upper, 3),
-            "range": round(upper - lower, 3),
+            "range": round(abs(upper - lower), 3),
         })
 
     return {
@@ -183,4 +188,3 @@ def explain_sensitivity(sens_result):
         )
     lines.append("下面开始分析这些变量对碳储预测的敏感性及其生态学含义。")
     return "\n".join(lines)
-

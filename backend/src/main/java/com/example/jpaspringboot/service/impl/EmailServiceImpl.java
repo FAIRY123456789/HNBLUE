@@ -25,6 +25,7 @@
 package com.example.jpaspringboot.service.impl;
 import com.example.jpaspringboot.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,9 @@ public class EmailServiceImpl implements EmailService {
 
     @Autowired
     private JavaMailSender mailSender;  // Spring邮件发送器，自动注入配置的邮件服务器信息
+
+    @Value("${spring.mail.username:}")
+    private String fromAddress;
 
     /**
      * 发送简单的文本邮件
@@ -47,8 +51,11 @@ public class EmailServiceImpl implements EmailService {
         // 创建简单邮件消息对象
         SimpleMailMessage message = new SimpleMailMessage();
 
-        // 设置发件人邮箱地址（需与配置的SMTP账号一致）
-        message.setFrom("2649805992@qq.com");
+        // 发件人由环境配置提供，并应与 SMTP 认证账号一致。
+        if (fromAddress == null || fromAddress.isBlank()) {
+            throw new IllegalStateException("MAIL_USERNAME is required before sending email");
+        }
+        message.setFrom(fromAddress);
 
         // 设置收件人邮箱地址
         message.setTo(to);

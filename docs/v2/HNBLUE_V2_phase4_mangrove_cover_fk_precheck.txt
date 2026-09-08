@@ -1,0 +1,9 @@
+﻿+-------------------------------------+-------+
+| metric                              | value |
++-------------------------------------+-------+
+| expected_csv_rows                   |    66 |
+| matched_source_fk_rows              |    66 |
+| matched_region_fk_rows              |    66 |
+| matched_both_fk_rows                |    66 |
+| existing_duplicate_natural_key_rows |     0 |
++-------------------------------------+-------+

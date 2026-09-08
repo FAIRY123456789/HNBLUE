@@ -1,0 +1,82 @@
+﻿+------------------------+-------+
+| metric                 | value |
++------------------------+-------+
+| core_data_source_after |     9 |
+| core_region_after      |    25 |
+| sat_cover_after        |     0 |
+| sat_metric_after       |     0 |
+| intl_lit_carbon_after  |     0 |
+| intl_allometry_after   |     0 |
++------------------------+-------+
++------------------------+
+| matched_public_sources |
++------------------------+
+|                      9 |
++------------------------+
++------------------------+
+| matched_public_regions |
++------------------------+
+|                     25 |
++------------------------+
++----------------------------+
+| broken_parent_region_count |
++----------------------------+
+|                          0 |
++----------------------------+
++------------------------+--------------------------------+------------------+----------------------+
+| region_code            | region_name                    | parent_region_id | resolved_parent_code |
++------------------------+--------------------------------+------------------+----------------------+
+| REG_GLOBAL             | 全球                           |             NULL | NULL                 |
+| REG_HI                 | 海南省                         |             NULL | NULL                 |
+| REG_HI_DONGFANG        | 海南岛-东方                    |                4 | REG_HI               |
+| REG_HI_DONGZHAIGANG    | 海南岛-东寨港                  |                4 | REG_HI               |
+| REG_HI_GUANNAN         | 海南岛-冠南                    |                4 | REG_HI               |
+| REG_HI_HUACHANGWAN     | 海南岛-花场湾                  |                4 | REG_HI               |
+| REG_HI_HUIWEN          | 海南岛-会文                    |                4 | REG_HI               |
+| REG_HI_ISLAND          | 海南岛                         |                4 | REG_HI               |
+| REG_HI_MANIAOGANG      | 海南岛-马袅港                  |                4 | REG_HI               |
+| REG_HI_PUQIAN          | 海南岛-铺前                    |                4 | REG_HI               |
+| REG_HI_XINYINGGANG     | 海南岛-新英港                  |                4 | REG_HI               |
+| REG_HI_YANGPUGANG      | 海南岛-洋浦港                  |                4 | REG_HI               |
+| REG_WENCHANG           | 文昌市                         |             NULL | NULL                 |
+| REG_WENCHANG_BAMEN_BAY | 文昌八门湾自然保护区           |             NULL | NULL                 |
+| REG_万宁市             | 万宁市                         |             NULL | NULL                 |
+| REG_三亚市             | 三亚市                         |             NULL | NULL                 |
+| REG_东方市             | 东方市                         |             NULL | NULL                 |
+| REG_临高县             | 临高县                         |             NULL | NULL                 |
+| REG_乐东县             | 乐东县                         |             NULL | NULL                 |
+| REG_儋州市             | 儋州市                         |             NULL | NULL                 |
+| REG_昌江县             | 昌江县                         |             NULL | NULL                 |
+| REG_海口市             | 海口市                         |             NULL | NULL                 |
+| REG_澄迈县             | 澄迈县                         |             NULL | NULL                 |
+| REG_琼海市             | 琼海市                         |             NULL | NULL                 |
+| REG_陵水县             | 陵水县                         |             NULL | NULL                 |
++------------------------+--------------------------------+------------------+----------------------+
++-------------------------------+
+| possible_mojibake_region_rows |
++-------------------------------+
+|                             0 |
++-------------------------------+
++------------------------+--------------------------------+---------------------------+
+| simulated_source_count | unknown_or_null_category_count | blank_version_label_count |
++------------------------+--------------------------------+---------------------------+
+|                      0 |                              0 |                         0 |
++------------------------+--------------------------------+---------------------------+
++------------------------------------------+-----------------+--------------+---------------------------------------+
+| source_code                              | source_category | is_simulated | version_label                         |
++------------------------------------------+-----------------+--------------+---------------------------------------+
+| SRC_ALLO_KOMIYAMA_2005                   | LITERATURE      |            0 | HNBLUE V2.0 public normalized package |
+| SRC_BAAD_BIOMASS_AND_ALLOMETRY_DATABASE  | PUBLIC_DATASET  |            0 | HNBLUE V2.0 public normalized package |
+| SRC_GOV_HI_BLUE_CARBON_2023              | GOVERNMENT_DATA |            0 | HNBLUE V2.0 public normalized package |
+| SRC_IPCC_WETLANDS_SUPPLEMENT             | LITERATURE      |            0 | HNBLUE V2.0 public normalized package |
+| SRC_LIT_BAMEN_SOC_2022                   | LITERATURE      |            0 | HNBLUE V2.0 public normalized package |
+| SRC_LIT_FORESTS_HI_MANGROVE_RS_2023      | DERIVED_PRODUCT |            0 | HNBLUE V2.0 public normalized package |
+| SRC_LIT_FRONTIERS_HI_LULC_INVEST_2024    | MODEL_OUTPUT    |            0 | HNBLUE V2.0 public normalized package |
+| SRC_LIT_HI_GHG_2022                      | LITERATURE      |            0 | HNBLUE V2.0 public normalized package |
+| SRC_TALLO_GLOBAL_TREE_ALLOMETRY_DATABASE | PUBLIC_DATASET  |            0 | HNBLUE V2.0 public normalized package |
++------------------------------------------+-----------------+--------------+---------------------------------------+
++--------------+-------------+-------------+
+| TABLE_SCHEMA | table_count | approx_rows |
++--------------+-------------+-------------+
+| hnblue       |          13 |        4804 |
++--------------+-------------+-------------+

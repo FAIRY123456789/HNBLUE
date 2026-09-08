@@ -9,7 +9,7 @@
  *
  * 核心配置：
  * • RedisTemplate - Redis操作模板配置
- * • CacheManager - 缓存管理器配置  
+ * • CacheManager - 缓存管理器配置
  * • KeyGenerator - 自定义缓存键生成规则
  *
  * 序列化策略：
@@ -48,6 +48,8 @@ import org.springframework.data.redis.serializer.*;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 import java.lang.reflect.Method;
@@ -143,16 +145,27 @@ public class RedisConfig {
 
         GenericJackson2JsonRedisSerializer jackson2JsonRedisSerializer = new GenericJackson2JsonRedisSerializer(om);
 
-        // 配置缓存序列化规则
+        // 配置缓存序列化规则。所有业务查询缓存统一放入 hnblue:cache:v2: 命名空间。
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofSeconds(600))  // 固定600秒过期时间
-                // .entryTtl(randomTtl())  // 可选：使用随机TTL防止缓存雪崩
-                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(redisSerializer))  // 键序列化
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jackson2JsonRedisSerializer))  // 值序列化
-                .disableCachingNullValues();  // 禁止缓存空值
+                .entryTtl(Duration.ofMinutes(10))
+                .computePrefixWith(cacheName -> "hnblue:cache:v2:" + cacheName + ":")
+                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(redisSerializer))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jackson2JsonRedisSerializer))
+                .disableCachingNullValues();
+
+        Map<String, RedisCacheConfiguration> ttlByCache = new HashMap<>();
+        ttlByCache.put("dashboard-summary", config.entryTtl(Duration.ofMinutes(10)));
+        ttlByCache.put("sources", config.entryTtl(Duration.ofHours(6)));
+        ttlByCache.put("mangrove-cover", config.entryTtl(Duration.ofMinutes(30)));
+        ttlByCache.put("region-metrics", config.entryTtl(Duration.ofMinutes(30)));
+        ttlByCache.put("literature-carbon", config.entryTtl(Duration.ofHours(2)));
+        ttlByCache.put("region-overview", config.entryTtl(Duration.ofMinutes(15)));
+        ttlByCache.put("ai-context", config.entryTtl(Duration.ofMinutes(10)));
 
         RedisCacheManager cacheManager = RedisCacheManager.builder(factory)
                 .cacheDefaults(config)
+                .withInitialCacheConfigurations(ttlByCache)
+                .transactionAware()
                 .build();
         return cacheManager;
     }

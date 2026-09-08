@@ -1,4 +1,4 @@
-<!-- 
+<!--
 区域详情分析页面组件 - 展示特定区域蓝碳资源详细信息
 
 功能概述：
@@ -219,7 +219,7 @@ const economyData = ref([]);
  */
 const fetchRegionData = async () => {
   try {
-    const res = await axios.get(`http://localhost:8088/api/devisual/${props.name}`);
+    const res = await axios.get(`/api/devisual/${props.name}`);
     const data = res.data;
 
     // 数据绑定到各个响应式变量

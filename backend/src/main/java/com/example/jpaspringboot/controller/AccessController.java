@@ -26,6 +26,7 @@ import com.example.jpaspringboot.service.AccessLimit;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@org.springframework.context.annotation.Profile("dev")
 @RequestMapping("access")
 public class AccessController {
 

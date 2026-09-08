@@ -132,7 +132,7 @@ public class AdministratorUserRelationServiceImpl implements AdministratorUserRe
         for (AdministratorUserRelation relation : relations) {
             users.add(relation.getUser());
         }
-        return null; // 注意：此处应返回users而非null
+        return users;
     }
 
     /**

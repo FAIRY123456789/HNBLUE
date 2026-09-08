@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HNBLUE V2.0 Public Data Demo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17211d;
+      --muted: #65736d;
+      --line: #d8e0dc;
+      --surface: #ffffff;
+      --soft: #f4f7f5;
+      --green: #1f7a5a;
+      --teal: #0e7c86;
+      --blue: #3366a8;
+      --amber: #a7671f;
+      --red: #a23b32;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #eef3f0;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+    }
+    header {
+      padding: 22px 28px 18px;
+      border-bottom: 1px solid var(--line);
+      background: #f9fbfa;
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      line-height: 1.25;
+      font-weight: 700;
+    }
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    main {
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      padding: 18px;
+    }
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px 14px;
+      min-height: 74px;
+    }
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .stat strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 24px;
+      line-height: 1;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(360px, .7fr);
+      gap: 14px;
+    }
+    section {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      min-width: 0;
+    }
+    section h2 {
+      margin: 0 0 12px;
+      font-size: 16px;
+      line-height: 1.3;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 320px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fbfdfc;
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+    .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 6px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      color: var(--muted);
+      font-weight: 700;
+      background: #f7faf8;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px;
+      background: #fbfdfc;
+      min-height: 112px;
+    }
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .value {
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.1;
+      color: var(--green);
+    }
+    .unit {
+      margin-left: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 400;
+    }
+    .meta {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+    .tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 11px;
+      color: var(--muted);
+      background: #fff;
+    }
+    .proxy {
+      color: var(--amber);
+      border-color: #e2bd8d;
+      background: #fff7ed;
+    }
+    .source-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .source {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fbfdfc;
+      min-height: 98px;
+    }
+    .source strong {
+      display: block;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .source span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .wide { grid-column: 1 / -1; }
+    .error {
+      border-color: #e7b3ae;
+      color: var(--red);
+      background: #fff7f6;
+    }
+    @media (max-width: 980px) {
+      .toolbar, .grid, .cards, .source-list { grid-template-columns: 1fr; }
+      main { padding: 12px; }
+      canvas { height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>HNBLUE V2.0 公开数据展示原型</h1>
+    <p class="subtitle">直接读取 <code>data/results/hnblue_v2_public/normalized/</code> JSON/CSV。数据仅用于前端展示与后续 V2.0 入库映射，不连接数据库。</p>
+  </header>
+  <main>
+    <div id="status" class="toolbar"></div>
+    <div class="grid">
+      <section>
+        <h2>海南红树林面积时序</h2>
+        <canvas id="areaChart" width="1100" height="360"></canvas>
+        <div id="areaLegend" class="legend"></div>
+      </section>
+      <section>
+        <h2>2020 跟踪区域面积结构</h2>
+        <table id="rankTable"></table>
+      </section>
+      <section>
+        <h2>遥感 / 土地利用 / 碳储 proxy 指标</h2>
+        <canvas id="remoteChart" width="1100" height="360"></canvas>
+        <div class="meta">InVEST 碳储与清单类指标保留 proxy 标识，未写作通量塔观测。</div>
+      </section>
+      <section>
+        <h2>关键遥感指标表</h2>
+        <table id="remoteTable"></table>
+      </section>
+      <section class="wide">
+        <h2>文献碳储证据卡片</h2>
+        <div id="cards" class="cards"></div>
+      </section>
+      <section class="wide">
+        <h2>数据来源与质量等级</h2>
+        <div id="sources" class="source-list"></div>
+      </section>
+    </div>
+  </main>
+  <script>
+    const base = '../../data/results/hnblue_v2_public/normalized/';
+    const colors = ['#1f7a5a', '#0e7c86', '#3366a8', '#a7671f', '#6d5fa8', '#257f9a', '#8a6b2e', '#3f7d35', '#9a4b52', '#5e6c76'];
+
+    async function loadJson(name) {
+      const response = await fetch(base + name);
+      if (!response.ok) throw new Error(`${name} ${response.status}`);
+      return response.json();
+    }
+
+    async function loadCsv(name) {
+      const response = await fetch(base + name);
+      if (!response.ok) throw new Error(`${name} ${response.status}`);
+      return parseCsv(await response.text());
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [], value = '', quote = false;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i], n = text[i + 1];
+        if (quote && c === '"' && n === '"') { value += '"'; i++; continue; }
+        if (c === '"') { quote = !quote; continue; }
+        if (!quote && c === ',') { row.push(value); value = ''; continue; }
+        if (!quote && (c === '\n' || c === '\r')) {
+          if (c === '\r' && n === '\n') i++;
+          row.push(value); value = '';
+          if (row.some(Boolean)) rows.push(row);
+          row = [];
+          continue;
+        }
+        value += c;
+      }
+      if (value || row.length) { row.push(value); rows.push(row); }
+      const header = rows.shift() || [];
+      return rows.map(r => Object.fromEntries(header.map((h, i) => [h, r[i] ?? ''])));
+    }
+
+    function stat(label, value) {
+      return `<div class="stat"><span>${label}</span><strong>${value}</strong></div>`;
+    }
+
+    function drawLines(canvas, series) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      const pad = { l: 64, r: 18, t: 18, b: 44 };
+      const xs = [...new Set(series.flatMap(s => s.points.map(p => p.year)))].sort((a, b) => a - b);
+      const values = series.flatMap(s => s.points.map(p => p.value));
+      const minY = Math.min(...values), maxY = Math.max(...values);
+      const x = year => pad.l + (year - xs[0]) / (xs[xs.length - 1] - xs[0] || 1) * (w - pad.l - pad.r);
+      const y = value => h - pad.b - (value - minY) / (maxY - minY || 1) * (h - pad.t - pad.b);
+      ctx.strokeStyle = '#d8e0dc';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        const yy = pad.t + i * (h - pad.t - pad.b) / 4;
+        ctx.moveTo(pad.l, yy); ctx.lineTo(w - pad.r, yy);
+      }
+      ctx.stroke();
+      ctx.fillStyle = '#65736d';
+      ctx.font = '12px Arial';
+      xs.forEach(year => ctx.fillText(year, x(year) - 14, h - 18));
+      [minY, maxY].forEach(v => ctx.fillText(Math.round(v).toLocaleString(), 8, y(v) + 4));
+      series.forEach((s, i) => {
+        ctx.strokeStyle = colors[i % colors.length];
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        s.points.forEach((p, j) => {
+          const px = x(p.year), py = y(p.value);
+          if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        });
+        ctx.stroke();
+        s.points.forEach(p => {
+          ctx.beginPath(); ctx.arc(x(p.year), y(p.value), 3, 0, Math.PI * 2); ctx.fill();
+        });
+      });
+    }
+
+    function drawBars(canvas, rows) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      const pad = { l: 80, r: 20, t: 18, b: 70 };
+      const max = Math.max(...rows.map(r => r.value));
+      const bw = (w - pad.l - pad.r) / rows.length * 0.66;
+      ctx.strokeStyle = '#d8e0dc';
+      ctx.beginPath(); ctx.moveTo(pad.l, h - pad.b); ctx.lineTo(w - pad.r, h - pad.b); ctx.stroke();
+      rows.forEach((r, i) => {
+        const x = pad.l + i * (w - pad.l - pad.r) / rows.length + bw * 0.25;
+        const bh = (r.value / max) * (h - pad.t - pad.b);
+        ctx.fillStyle = r.is_proxy ? '#a7671f' : colors[i % colors.length];
+        ctx.fillRect(x, h - pad.b - bh, bw, bh);
+        ctx.save();
+        ctx.translate(x + bw / 2, h - 42);
+        ctx.rotate(-Math.PI / 5);
+        ctx.fillStyle = '#65736d';
+        ctx.font = '12px Arial';
+        ctx.fillText(r.label, 0, 0);
+        ctx.restore();
+      });
+    }
+
+    function table(el, header, rows) {
+      el.innerHTML = `<thead><tr>${header.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody>`;
+    }
+
+    function topAreaRegions(data) {
+      return data.regions
+        .filter(r => r.points.length >= 5)
+        .sort((a, b) => Math.max(...b.points.map(p => p.value)) - Math.max(...a.points.map(p => p.value)))
+        .slice(0, 6);
+    }
+
+    async function boot() {
+      const [area, remote, literature, sources] = await Promise.all([
+        loadJson('frontend_mangrove_area_timeseries.json'),
+        loadJson('frontend_remote_sensing_metrics.json'),
+        loadJson('frontend_literature_carbon_cards.json'),
+        loadCsv('display_data_sources.csv')
+      ]);
+      const totalRecords = area.regions.reduce((s, r) => s + r.points.length, 0) + (area.supplement_metrics || []).length + remote.metrics.length + literature.cards.length;
+      const proxyCount = remote.metrics.filter(m => m.is_proxy).length + literature.cards.filter(c => c.is_proxy).length;
+      document.getElementById('status').innerHTML = [
+        stat('展示记录数', totalRecords),
+        stat('面积区域', area.regions.length),
+        stat('遥感指标', new Set(remote.metrics.map(m => m.indicator_code)).size),
+        stat('Proxy 记录', proxyCount)
+      ].join('');
+
+      const lineSeries = topAreaRegions(area);
+      drawLines(document.getElementById('areaChart'), lineSeries);
+      document.getElementById('areaLegend').innerHTML = lineSeries.map((s, i) => `<span class="legend-item"><i class="swatch" style="background:${colors[i % colors.length]}"></i>${s.region_name}</span>`).join('');
+
+      const shares = (area.supplement_metrics || [])
+        .filter(m => m.indicator_name === 'mangrove_area_2020_share_of_tracked_sites')
+        .sort((a, b) => b.value - a.value);
+      table(document.getElementById('rankTable'), ['区域', '2020占比', '数据属性'], shares.map(r => `<tr><td>${r.region_name}</td><td>${r.value.toFixed(2)}%</td><td><span class="tag">实数派生</span></td></tr>`));
+
+      const remoteRows = remote.metrics
+        .filter(m => ['TOTAL_CARBON_STORAGE', 'CARBON_DENSITY', 'FORESTLAND_AREA', 'BUILT_LAND_AREA', 'WATER_LAND_AREA'].includes(m.indicator_code) && ['2020', '2000-2020'].includes(String(m.year_or_period)))
+        .slice(0, 12);
+      drawBars(document.getElementById('remoteChart'), remoteRows.map(r => ({ label: r.indicator_label, value: Math.abs(Number(r.value)), is_proxy: r.is_proxy })));
+      table(document.getElementById('remoteTable'), ['指标', '时期', '值', '属性'], remoteRows.map(r => `<tr><td>${r.indicator_label}</td><td>${r.year_or_period}</td><td>${Number(r.value).toLocaleString()} ${r.unit}</td><td><span class="tag ${r.is_proxy ? 'proxy' : ''}">${r.is_proxy ? 'proxy' : 'direct'}</span></td></tr>`));
+
+      const cardRows = literature.cards
+        .filter(c => ['A', 'B'].includes(c.quality_level))
+        .slice(0, 12);
+      document.getElementById('cards').innerHTML = cardRows.map(c => `<article class="card"><h3>${c.title}</h3><div class="value">${Number(c.value).toLocaleString()}<span class="unit">${c.unit}</span></div><div class="meta"><span class="tag ${c.is_proxy ? 'proxy' : ''}">${c.is_proxy ? 'proxy' : 'direct'}</span> 质量 ${c.quality_level}<br>${c.subtitle}</div></article>`).join('');
+
+      document.getElementById('sources').innerHTML = sources.slice(0, 9).map(s => `<div class="source"><strong>${s.source_id}</strong><span>${s.source_name}</span><span>质量 ${s.quality_level} · ${s.record_count} 条 · proxy ${s.proxy_count}</span></div>`).join('');
+    }
+
+    boot().catch(error => {
+      document.getElementById('status').innerHTML = `<div class="stat error"><span>数据加载失败</span><strong>检查本地 HTTP 路径</strong></div>`;
+      console.error(error);
+    });
+  </script>
+</body>
+</html>

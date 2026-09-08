@@ -34,7 +34,9 @@ import com.example.jpaspringboot.repository.AdministratorUserRelationRepository;
 import com.example.jpaspringboot.repository.UserRepository;
 import com.example.jpaspringboot.service.UserService;
 import com.example.jpaspringboot.util.JwtUtils;
+import com.example.jpaspringboot.util.PasswordPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -50,6 +52,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -99,23 +102,27 @@ public class UserServiceImpl implements UserService {
     @Override
     public int addUser(@RequestParam String name, @RequestParam String password,
                        @RequestParam String email, @RequestParam String birthdate) {
-        User existingUser = userRepository.findByName(name);
+        String normalizedName = normalizeUsername(name);
+        String normalizedEmail = normalizeEmail(email);
+        String normalizedBirthdate = normalizeBirthdate(birthdate);
+        PasswordPolicy.requireValid(password);
+        User existingUser = userRepository.findByName(normalizedName);
         if (existingUser == null) {
             try {
                 String salt = generateSalt();
                 String passwordHash = hashPassword(password, salt);
-                User newUser = new User(name, salt, passwordHash, email, birthdate);
+                User newUser = new User(normalizedName, salt, passwordHash, normalizedEmail, normalizedBirthdate);
                 newUser = userRepository.save(newUser);
-                System.out.println("用户添加成功!");
-
-                return newUser.getId(); // 返回新用户的ID
+                System.out.println("??????!");
+                return newUser.getId();
+            } catch (IllegalArgumentException | DataIntegrityViolationException e) {
+                throw e;
             } catch (Exception e) {
-                System.out.println("添加用户出错: " + e.getMessage());
-                throw new RuntimeException("用户添加失败!");
+                System.out.println("??????: " + e.getClass().getSimpleName());
+                throw new RuntimeException("??????!");
             }
-        } else {
-            throw new UserAlreadyExistsException("用户添加失败! 用户名已存在!");
         }
+        throw new UserAlreadyExistsException("??????! ??????!");
     }
 
     @Override
@@ -134,78 +141,66 @@ public class UserServiceImpl implements UserService {
                               @RequestParam(required = false) String email,
                               @RequestParam(required = false) String birthdate) {
         Optional<User> optionalUser = userRepository.findById((long) id);
-        if (optionalUser.isPresent()) {
-            User existingUser = optionalUser.get();
-            String existingpasswordHash = hashPassword(password, existingUser.getSalt());
-
-            // 检测各字段变更状态
-            boolean isNameChanged = !name.equals(existingUser.getName());
-            boolean isPasswordChanged = !existingpasswordHash.equals(existingUser.getPasswordHash());
-            boolean isEmailChanged = email != null && !email.equals(existingUser.getEmail());
-            boolean isBirthdateChanged = birthdate != null && !birthdate.equals(existingUser.getBirthdate());
-
-            try {
-                if (isNameChanged) {
-                    existingUser.setName(name);
-                }
-
-                if (isPasswordChanged) {
-                    String salt = generateSalt();
-                    String passwordHash = hashPassword(password, salt);
-                    existingUser.setSalt(salt);
-                    existingUser.setPasswordHash(passwordHash);
-                }
-
-                if (isEmailChanged) {
-                    existingUser.setEmail(email);
-                }
-
-                if (isBirthdateChanged) {
-                    existingUser.setBirthdate(birthdate);
-                }
-
-                // 仅在有变更时执行保存操作
-                if (isNameChanged || isPasswordChanged || isEmailChanged || isBirthdateChanged) {
-                    userRepository.save(existingUser);
-                    System.out.println("用户信息更新成功!");
-                    return true;
-                } else {
-                    System.out.println("未检测到需要更新的变更");
-                    return false;
-                }
-            } catch (Exception e) {
-                System.out.println("更新用户信息出错: " + e.getMessage());
-                return false;
+        if (optionalUser.isEmpty()) {
+            System.out.println("???ID? " + id + " ???");
+            return false;
+        }
+        User existingUser = optionalUser.get();
+        String normalizedName = normalizeUsername(name);
+        String normalizedEmail = normalizeEmail(email);
+        String normalizedBirthdate = normalizeBirthdate(birthdate);
+        if (password != null && !password.isBlank()) {
+            PasswordPolicy.requireValid(password);
+        }
+        String existingpasswordHash = (password == null || password.isBlank()) ? existingUser.getPasswordHash() : hashPassword(password, existingUser.getSalt());
+        boolean isNameChanged = normalizedName != null && !normalizedName.equals(existingUser.getName());
+        boolean isPasswordChanged = password != null && !password.isBlank() && !existingpasswordHash.equals(existingUser.getPasswordHash());
+        boolean isEmailChanged = normalizedEmail != null && !normalizedEmail.equals(existingUser.getEmail());
+        boolean isBirthdateChanged = normalizedBirthdate != null && !normalizedBirthdate.equals(existingUser.getBirthdate());
+        try {
+            if (isNameChanged) existingUser.setName(normalizedName);
+            if (isPasswordChanged) {
+                String salt = generateSalt();
+                String passwordHash = hashPassword(password, salt);
+                existingUser.setSalt(salt);
+                existingUser.setPasswordHash(passwordHash);
             }
-        } else {
-            System.out.println("未找到ID为 " + id + " 的用户");
+            if (isEmailChanged) existingUser.setEmail(normalizedEmail);
+            if (isBirthdateChanged) existingUser.setBirthdate(normalizedBirthdate);
+            if (isNameChanged || isPasswordChanged || isEmailChanged || isBirthdateChanged) {
+                userRepository.save(existingUser);
+                System.out.println("????????!");
+                return true;
+            }
+            System.out.println("???????????");
+            return false;
+        } catch (IllegalArgumentException | DataIntegrityViolationException e) {
+            throw e;
+        } catch (Exception e) {
+            System.out.println("????????: " + e.getClass().getSimpleName());
             return false;
         }
     }
 
-    /**
-     * 更新当前用户信息（用户自助操作）
-     * 基于JWT令牌识别用户身份，支持部分字段更新
-     */
     @Override
     public boolean updateCurrentUserInfo(String token, String name, String password, String email, String birthdate) {
-        String username = JwtUtils.extractUsername(token);
+        String cleanToken = token == null ? "" : token.replace("Bearer ", "");
+        String username = JwtUtils.extractUsername(cleanToken);
         User user = userRepository.findByName(username);
         if (user == null) {
-            System.out.println("当前用户未找到");
+            System.out.println("???????");
             return false;
         }
-
         boolean isChanged = false;
-
-        // 用户名更新检查
-        if (name != null && !name.equals(user.getName())) {
-            user.setName(name);
+        String normalizedName = normalizeUsername(name);
+        String normalizedEmail = normalizeEmail(email);
+        String normalizedBirthdate = normalizeBirthdate(birthdate);
+        if (normalizedName != null && !normalizedName.equals(user.getName())) {
+            user.setName(normalizedName);
             isChanged = true;
         }
-
-        // 密码更新检查（重新生成盐值）
         if (password != null && !password.isEmpty()) {
+            PasswordPolicy.requireValid(password);
             String hashed = hashPassword(password, user.getSalt());
             if (!hashed.equals(user.getPasswordHash())) {
                 String newSalt = generateSalt();
@@ -215,56 +210,48 @@ public class UserServiceImpl implements UserService {
                 isChanged = true;
             }
         }
-
-        // 邮箱更新检查
-        if (email != null && !email.equals(user.getEmail())) {
-            user.setEmail(email);
+        if (normalizedEmail != null && !normalizedEmail.equals(user.getEmail())) {
+            user.setEmail(normalizedEmail);
             isChanged = true;
         }
-
-        // 生日更新检查
-        if (birthdate != null && !birthdate.equals(user.getBirthdate())) {
-            user.setBirthdate(birthdate);
+        if (normalizedBirthdate != null && !normalizedBirthdate.equals(user.getBirthdate())) {
+            user.setBirthdate(normalizedBirthdate);
             isChanged = true;
         }
-
         if (isChanged) {
             userRepository.save(user);
-            System.out.println("当前用户信息已更新！");
+            System.out.println("??????????");
             return true;
-        } else {
-            System.out.println("未检测到任何变更");
-            return false;
         }
+        System.out.println("????????");
+        return false;
     }
 
-    /**
-     * 用户自助注册
-     */
     public @ResponseBody int addUserSelf(@RequestParam String name, @RequestParam String password,
                                          @RequestParam String email, @RequestParam String birthdate) {
-        User existingUser = userRepository.findByName(name);
+        String normalizedName = normalizeUsername(name);
+        String normalizedEmail = normalizeEmail(email);
+        String normalizedBirthdate = normalizeBirthdate(birthdate);
+        PasswordPolicy.requireValid(password);
+        User existingUser = userRepository.findByName(normalizedName);
         if (existingUser == null) {
             try {
                 String salt = generateSalt();
                 String passwordHash = hashPassword(password, salt);
-                User newUser = new User(name, salt, passwordHash, email, birthdate);
+                User newUser = new User(normalizedName, salt, passwordHash, normalizedEmail, normalizedBirthdate);
                 newUser = userRepository.save(newUser);
-                System.out.println("用户注册成功!");
-
+                System.out.println("??????!");
                 return newUser.getId();
+            } catch (IllegalArgumentException | DataIntegrityViolationException e) {
+                throw e;
             } catch (Exception e) {
-                System.out.println("用户注册出错: " + e.getMessage());
-                throw new RuntimeException("用户注册失败!");
+                System.out.println("??????: " + e.getClass().getSimpleName());
+                throw new RuntimeException("??????!");
             }
-        } else {
-            throw new UserAlreadyExistsException("用户注册失败! 用户名已存在!");
         }
+        throw new UserAlreadyExistsException("??????! ??????!");
     }
 
-    /**
-     * 根据ID删除单个用户
-     */
     @Override
     public boolean deleteUserById(Long id) {
         try {
@@ -297,25 +284,16 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public Page<User> findUsersManagedByAdmin(String token, Pageable pageable) {
-        String adminName = JwtUtils.getUsernameFromToken(token);
-        try {
-            Admin admin = adminRepository.findByName(adminName);
-
-            // 获取管理员关联的所有用户ID
-            List<Integer> userIds = administratorUserRelationRepository.findByAdmin(admin)
-                    .stream()
-                    .map(relation -> relation.getUser().getId())
-                    .collect(Collectors.toList());
-
-            // 根据用户ID列表分页查询用户信息
-            if (!userIds.isEmpty()) {
-                return userRepository.findAllById(userIds, pageable);
-            } else {
-                return new PageImpl<>(new ArrayList<>());
-            }
-        } catch (RuntimeException e) {
-            throw new RuntimeException("未找到用户名为 " + adminName + " 的管理员");
+        Admin admin = getAdminFromToken(token);
+        if (isPrimaryAdmin(admin)) {
+            return userRepository.findAll(pageable);
         }
+
+        List<Integer> userIds = managedUserIds(admin);
+        if (userIds.isEmpty()) {
+            return new PageImpl<>(new ArrayList<>(), pageable, 0);
+        }
+        return userRepository.findAllById(userIds, pageable);
     }
 
     /**
@@ -343,9 +321,12 @@ public class UserServiceImpl implements UserService {
      * 生成并保存测试用户数据
      */
     public void generateAndSaveTestUsers() {
+        String password = System.getenv("HNBLUE_TEST_USER_PASSWORD");
+        if (password == null || password.isBlank()) {
+            throw new IllegalStateException("HNBLUE_TEST_USER_PASSWORD is required");
+        }
         for (int i = 100002; i <= 100999; i++) {
             String username = "test_user" + i;
-            String password = "123456";
             addUser(username, password);
         }
     }
@@ -380,18 +361,17 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public boolean verifyUser(String username, String email, String newpassword) {
-        Optional<User> userOpt = Optional.ofNullable(userRepository.findByName(username));
-        if (userOpt.isPresent() && userOpt.get().getEmail().equals(email)) {
+        PasswordPolicy.requireValid(newpassword);
+        String normalizedUsername = normalizeUsername(username);
+        String normalizedEmail = normalizeEmail(email);
+        Optional<User> userOpt = Optional.ofNullable(userRepository.findByName(normalizedUsername));
+        if (userOpt.isPresent() && Objects.equals(normalizeEmail(userOpt.get().getEmail()), normalizedEmail)) {
             sendVerificationEmail(userOpt.get(), newpassword);
             return true;
         }
         return false;
     }
 
-    /**
-     * 发送邮箱验证邮件
-     * 包含密码重置链接和加密的新密码信息
-     */
     private void sendVerificationEmail(User user, String newPassword) {
         String encryptedPassword = encryptNewPassword(newPassword);
         String token = generateVerificationToken(user);
@@ -450,7 +430,8 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public boolean resetUserPassword(String username, String newPassword) {
-        Optional<User> userOpt = Optional.ofNullable(userRepository.findByName(username));
+        PasswordPolicy.requireValid(newPassword);
+        Optional<User> userOpt = Optional.ofNullable(userRepository.findByName(normalizeUsername(username)));
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             String newSalt = generateSalt();
@@ -463,9 +444,6 @@ public class UserServiceImpl implements UserService {
         return false;
     }
 
-    /**
-     * 根据用户ID获取用户名
-     */
     public String getUsernameById(Integer userId) {
         Optional<User> userOptional = userRepository.findById(userId.longValue());
         if (userOptional.isEmpty()) {
@@ -482,17 +460,30 @@ public class UserServiceImpl implements UserService {
     public UserInfoDTO getCurrentUserInfo(String token) {
         String username = JwtUtils.extractUsername(token);
         User user = userRepository.findByName(username);
-        if(user.getAvatar() == null){
-            return new UserInfoDTO(user.getName(), user.getEmail(), user.getBirthdate());
-        }else{
-            String avatarBase64 = Base64.getEncoder().encodeToString(user.getAvatar());
-            return new UserInfoDTO(user.getName(), user.getEmail(), user.getBirthdate(), avatarBase64);
+        if (user == null) {
+            throw new RuntimeException("当前用户不存在");
         }
+        String avatarBase64 = user.getAvatar() == null ? null : Base64.getEncoder().encodeToString(user.getAvatar());
+        String lastLoginAt = user.getLastLoginAt() == null ? null : user.getLastLoginAt().toString();
+        return new UserInfoDTO(user.getId(), user.getName(), user.getEmail(), user.getBirthdate(), avatarBase64, "User", lastLoginAt);
     }
 
     /**
      * 根据用户名模糊查询用户
      */
+
+    public User findById(Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+
+    public void markLastLogin(String username) {
+        User user = userRepository.findByName(username);
+        if (user != null) {
+            user.setLastLoginAt(LocalDateTime.now());
+            userRepository.save(user);
+        }
+    }
+
     public List<User> findUsersByNameContaining(String name) {
         return userRepository.findByNameContaining(name);
     }
@@ -529,18 +520,98 @@ public class UserServiceImpl implements UserService {
     /**
      * 管理员搜索关联用户（支持关键词过滤）
      */
-    public Page<User> searchUsersByAdmin(String token, String keyword, Pageable pageable) {
-        String adminName = JwtUtils.getUsernameFromToken(token);
-        Admin admin = adminRepository.findByName(adminName);
-
-        List<Integer> userIds = administratorUserRelationRepository.findByAdmin(admin)
-                .stream().map(relation -> relation.getUser().getId())
-                .collect(Collectors.toList());
-
-        if (userIds.isEmpty()) {
-            return new PageImpl<>(new ArrayList<>());
+        public Page<User> searchUsersByAdmin(String token, String keyword, Pageable pageable) {
+        String normalizedKeyword = keyword == null ? "" : keyword.trim();
+        if (normalizedKeyword.isEmpty()) {
+            return findUsersManagedByAdmin(token, pageable);
         }
 
-        return userRepository.searchByNameInIds(keyword, userIds, pageable);
+        Admin admin = getAdminFromToken(token);
+        if (isPrimaryAdmin(admin)) {
+            return userRepository.searchByKeyword(normalizedKeyword, pageable);
+        }
+
+        List<Integer> userIds = managedUserIds(admin);
+        if (userIds.isEmpty()) {
+            return new PageImpl<>(new ArrayList<>(), pageable, 0);
+        }
+        return userRepository.searchByKeywordInIds(normalizedKeyword, userIds, pageable);
+    }
+
+    public User findUserForAdmin(String token, Long userId) {
+        User user = findById(userId);
+        if (user == null) {
+            return null;
+        }
+        Admin admin = getAdminFromToken(token);
+        if (isPrimaryAdmin(admin) || canAdminAccessUser(admin, user)) {
+            return user;
+        }
+        return null;
+    }
+
+    public boolean userExists(Long userId) {
+        return userRepository.existsById(userId);
+    }
+
+    private Admin getAdminFromToken(String token) {
+        String adminName = JwtUtils.getUsernameFromToken(token);
+        Admin admin = adminRepository.findByName(adminName);
+        if (admin == null) {
+            throw new RuntimeException("管理员不存在");
+        }
+        return admin;
+    }
+
+    private boolean isPrimaryAdmin(Admin admin) {
+        return admin != null && (Integer.valueOf(100000).equals(admin.getId()) || "Admin_100000".equals(admin.getName()));
+    }
+
+    private List<Integer> managedUserIds(Admin admin) {
+        if (admin == null) {
+            return new ArrayList<>();
+        }
+        return administratorUserRelationRepository.findByAdmin(admin)
+                .stream()
+                .map(relation -> relation.getUser().getId())
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    private String normalizeUsername(String username) {
+        if (username == null) {
+            return null;
+        }
+        String value = username.trim();
+        return value.isEmpty() ? null : value;
+    }
+
+    private String normalizeEmail(String email) {
+        if (email == null) {
+            return null;
+        }
+        String value = email.trim().toLowerCase(Locale.ROOT);
+        return value.isEmpty() ? null : value;
+    }
+
+    private String normalizeBirthdate(String birthdate) {
+        if (birthdate == null) {
+            return null;
+        }
+        String value = birthdate.trim().replace('/', '-');
+        try {
+            return LocalDate.parse(value).toString();
+        } catch (Exception ex) {
+            return value;
+        }
+    }
+
+    private boolean canAdminAccessUser(Admin admin, User user) {
+        if (admin == null || user == null) {
+            return false;
+        }
+        return administratorUserRelationRepository.findByUser(user)
+                .stream()
+                .anyMatch(relation -> relation.getAdmin() != null && admin.getId().equals(relation.getAdmin().getId()));
     }
 }

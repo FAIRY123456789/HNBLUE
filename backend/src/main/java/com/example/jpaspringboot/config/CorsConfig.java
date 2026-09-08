@@ -31,14 +31,30 @@ import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerF
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
+
+    private final List<String> allowedOrigins;
+
+    public CorsConfig(@Value("${app.cors.allowed-origins:http://localhost:8080,http://localhost:8090}") String origins) {
+        this.allowedOrigins = Arrays.stream(origins.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isEmpty() && !"*".equals(value))
+                .toList();
+        if (this.allowedOrigins.isEmpty()) {
+            throw new IllegalStateException("app.cors.allowed-origins must contain at least one explicit origin");
+        }
+    }
 
     /**
      * 配置Spring MVC跨域映射规则
@@ -47,7 +63,7 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")                          // 匹配所有请求路径
-                .allowedOriginPatterns("*")                 // 允许所有源地址访问
+                .allowedOrigins(allowedOrigins.toArray(String[]::new))
                 .allowedMethods("GET", "POST", "PUT", "DELETE") // 允许的HTTP方法
                 .maxAge(168000)                             // 预检请求缓存时间（秒）
                 .allowedHeaders("*")                        // 允许所有请求头
@@ -64,7 +80,7 @@ public class CorsConfig implements WebMvcConfigurer {
     public FilterRegistrationBean<CorsFilter> corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
-        config.addAllowedOriginPattern("*");                // 允许所有源
+        config.setAllowedOrigins(allowedOrigins);
         config.addAllowedHeader("*");                       // 允许所有请求头
         config.addAllowedMethod("*");                       // 允许所有HTTP方法
         config.setAllowCredentials(true);                   // 允许凭证

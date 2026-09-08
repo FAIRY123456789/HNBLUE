@@ -23,13 +23,13 @@
  */
 package com.example.jpaspringboot.repository;
 
-import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.example.jpaspringboot.entity.User;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -43,6 +43,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return 用户实体对象
      */
     User findByName(String name);
+
+    /**
+     * 根据邮箱精确查询用户，用于注册重复校验。
+     */
+    User findByEmail(String email);
+
+    boolean existsByName(String name);
+
+    boolean existsByEmailIgnoreCase(String email);
 
     /**
      * 根据ID范围查询用户列表
@@ -79,9 +88,16 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @param pageable 分页参数
      * @return 分页用户结果
      */
-    @Query("SELECT u FROM User u WHERE u.id IN :ids AND u.name LIKE %:keyword%")
-    Page<User> searchByNameInIds(@Param("keyword") String keyword,
-                                 @Param("ids") List<Integer> ids,
-                                 Pageable pageable);
+    @Query("SELECT u FROM User u WHERE " +
+            "LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    Page<User> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT u FROM User u WHERE u.id IN :ids AND (" +
+            "LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')))" )
+    Page<User> searchByKeywordInIds(@Param("keyword") String keyword,
+                                    @Param("ids") List<Integer> ids,
+                                    Pageable pageable);
 
 }

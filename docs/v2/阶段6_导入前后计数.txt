@@ -1,0 +1,15 @@
+HNBLUE V2.0 Phase 6 导入前后计数
+生成日期: 2026-05-29
+
+核心完成表:
+- hainan_blue_carbon_core.t_data_source: before=9, after=9, expected=9
+- hainan_blue_carbon_core.t_region: before=25, after=25, expected=25
+- hainan_blue_carbon_satellite.t_satellite_mangrove_cover: before=66, after=66, expected=66
+
+事实表导入:
+- hainan_blue_carbon_satellite.t_satellite_region_metric: before=0, after=147, inserted=147, skipped_existing=0, failed=0, csv_rows=147, csv_proxy=30, db_proxy=30, csv_simulated=0, db_nonzero_simulated=0, source_matches=2, region_matches=10
+- hainan_blue_carbon_intl.t_literature_carbon_record: before=0, after=33, inserted=33, skipped_existing=0, failed=0, csv_rows=33, csv_proxy=0, db_proxy=0, csv_simulated=0, db_nonzero_simulated=0, source_matches=3, region_matches=7
+- hainan_blue_carbon_intl.t_allometry_equation: before=0, after=2, inserted=2, skipped_existing=0, failed=0, csv_rows=2, csv_proxy=0, db_proxy=0, csv_simulated=0, db_nonzero_simulated=0, source_matches=1, region_matches=1
+
+旧 hnblue guard before: tables=13, approx_rows=4804
+旧 hnblue guard after: tables=13, approx_rows=4804

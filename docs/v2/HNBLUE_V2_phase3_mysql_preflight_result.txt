@@ -1,0 +1,53 @@
+﻿+------------------------------+--------+
+| schema_name                  | status |
++------------------------------+--------+
+| hainan_blue_carbon_core      | EXISTS |
+| hainan_blue_carbon_satellite | EXISTS |
+| hainan_blue_carbon_intl      | EXISTS |
++------------------------------+--------+
++---------------------+--------------------------------------------------+
+| check_name          | status                                           |
++---------------------+--------------------------------------------------+
+| legacy_hnblue_guard | legacy schema exists; do not write it in Phase 3 |
++---------------------+--------------------------------------------------+
++------------------------------+----------------------------+---------+
+| target_schema                | target_table               | status  |
++------------------------------+----------------------------+---------+
+| hainan_blue_carbon_core      | t_data_source              | MISSING |
+| hainan_blue_carbon_core      | t_region                   | MISSING |
+| hainan_blue_carbon_intl      | t_allometry_equation       | MISSING |
+| hainan_blue_carbon_intl      | t_literature_carbon_record | MISSING |
+| hainan_blue_carbon_intl      | t_literature_reference     | MISSING |
+| hainan_blue_carbon_satellite | t_satellite_mangrove_cover | MISSING |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | MISSING |
++------------------------------+----------------------------+---------+
++------------------------------+----------------------------+------------------+---------+-----------+-------------+-------------+
+| target_schema                | target_table               | target_column    | status  | DATA_TYPE | COLUMN_TYPE | IS_NULLABLE |
++------------------------------+----------------------------+------------------+---------+-----------+-------------+-------------+
+| hainan_blue_carbon_core      | t_data_source              | citation_text    | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_core      | t_data_source              | is_simulated     | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_core      | t_data_source              | remark           | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_core      | t_data_source              | source_category  | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_core      | t_data_source              | source_code      | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_core      | t_data_source              | source_name      | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_core      | t_data_source              | source_url       | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_core      | t_data_source              | version_label    | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_core      | t_region                   | city             | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_core      | t_region                   | county           | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_core      | t_region                   | data_scope       | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_core      | t_region                   | ecosystem_type   | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_core      | t_region                   | parent_region_id | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_core      | t_region                   | province         | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_core      | t_region                   | region_code      | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_core      | t_region                   | region_level     | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_core      | t_region                   | region_name      | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_core      | t_region                   | remark           | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_intl      | t_allometry_equation       | equation_form    | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_intl      | t_literature_carbon_record | value_mg_ha      | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_intl      | t_literature_reference     | source_id        | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_satellite | t_satellite_mangrove_cover | mangrove_area_ha | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_satellite | t_satellite_mangrove_cover | metric_year      | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_satellite | t_satellite_mangrove_cover | region_id        | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | indicator_code   | MISSING | NULL      | NULL        | NULL        |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | value            | MISSING | NULL      | NULL        | NULL        |
++------------------------------+----------------------------+------------------+---------+-----------+-------------+-------------+

@@ -46,74 +46,56 @@ public class AccessLimitInterceptor implements HandlerInterceptor {
      */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        // 仅拦截方法级别的处理器
-        if (handler instanceof HandlerMethod){
-            HandlerMethod handlerMethod=(HandlerMethod)handler;
-            // 获取方法上的限流注解配置
-            AccessLimit accessLimit = handlerMethod.getMethodAnnotation(AccessLimit.class);
-            // 无限流注解的方法直接放行
-            if (accessLimit==null){
-                return true;
-            }
-            // 解析限流参数
-            int seconds = accessLimit.seconds();        // 时间窗口长度（秒）
-            int maxCount = accessLimit.maxCount();      // 窗口内最大请求次数
-            boolean needLogin = accessLimit.needLogin(); // 是否需要登录验证
+        if (!(handler instanceof HandlerMethod)) {
+            return true;
+        }
 
-            if (needLogin){
-                // 判断是否登录，拦截器不会拦截已登录的url
-            }
+        HandlerMethod handlerMethod = (HandlerMethod) handler;
+        AccessLimit accessLimit = handlerMethod.getMethodAnnotation(AccessLimit.class);
+        if (accessLimit == null) {
+            return true;
+        }
 
-            // 获取路径
-            String ip = request.getRemoteAddr();
-            // 将key设置为http://ip:/url的格式，只需ip，不需要添加接口，因为接口一旦限定，剩下的接口都不会被拦截
-            String key = ip + ":" + request.getServletPath();
+        int seconds = accessLimit.seconds();
+        int maxCount = accessLimit.maxCount();
+        String key = request.getRemoteAddr() + ":" + request.getServletPath();
+        String banKey = "ban:" + key;
 
-            // 检查惩罚期状态
-            String banKey = "ban:" + key; // 惩罚期键名
+        try {
             Object banVal = redisUtil.get(banKey);
             if (banVal != null) {
-                // 惩罚期内直接返回429状态
                 response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
                 response.setContentType("application/json;charset=utf-8");
                 response.getWriter().write("{\"error\": \"请求过于频繁，请稍后再试\"}");
                 return false;
             }
 
-            // 获取当前请求计数
             Integer count = null;
-            System.out.println();
-            if (redisUtil.get(key)!=null){
-                count = Integer.parseInt(redisUtil.get(key).toString());
+            Object countVal = redisUtil.get(key);
+            if (countVal != null) {
+                count = Integer.parseInt(countVal.toString());
             }
 
-            // 首次访问初始化计数器
-            if (count==null||count==-1){
-                redisUtil.set(key,1);
-                //设置过期时间
-                redisUtil.expire(key,seconds);
+            if (count == null || count == -1) {
+                redisUtil.set(key, 1);
+                redisUtil.expire(key, seconds);
                 return true;
             }
 
-            //如果访问次数<最大次数，则value+1
-            if (count<maxCount){
-                redisUtil.incr(key,1);
+            if (count < maxCount) {
+                redisUtil.incr(key, 1);
                 return true;
             }
 
-            //如果访问次数≥最大次数
-            if (count >= maxCount) {
-                // 触发阈值后，进入惩罚期（全部 429），不改返回体
-                int banSeconds = 60; // 惩罚期时长（可按需调整，如 seconds*10）
-                redisUtil.set(banKey, 1);
-                redisUtil.expire(banKey, banSeconds); // 设置惩罚期过期时间
-
-                response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value()); // 设置状态码为429
-                response.setContentType("application/json;charset=utf-8");
-                response.getWriter().write("{\"error\": \"请求过于频繁，请稍后再试\"}");
-                return false;
-            }
+            redisUtil.set(banKey, 1);
+            redisUtil.expire(banKey, 60);
+            response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+            response.setContentType("application/json;charset=utf-8");
+            response.getWriter().write("{\"error\": \"请求过于频繁，请稍后再试\"}");
+            return false;
+        } catch (Exception ex) {
+            System.err.println("AccessLimit Redis unavailable, allow request: " + ex.getClass().getSimpleName());
+            return true;
         }
-        return true;
     }
 }

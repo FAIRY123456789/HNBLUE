@@ -28,24 +28,35 @@
 package com.example.jpaspringboot.controller;
 
 import com.example.jpaspringboot.entity.User;
+import com.example.jpaspringboot.repository.UserRepository;
 import com.example.jpaspringboot.service.AccessLimit;
 import com.example.jpaspringboot.service.impl.AdminServiceImpl;
 import com.example.jpaspringboot.service.impl.UserServiceImpl;
+import com.example.jpaspringboot.service.impl.UserActivityLogServiceImpl;
 import com.example.jpaspringboot.util.JwtUtils;
 import com.example.jpaspringboot.util.RedisUtil;
-import com.example.jpaspringboot.util.Result;
+import com.example.jpaspringboot.util.PasswordPolicy;
 import io.netty.util.ResourceLeakDetector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.Base64;
+import java.util.Locale;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
 public class LoginController {
+
+    private static final Logger logger = LoggerFactory.getLogger(LoginController.class);
 
     @Autowired
     private UserServiceImpl userServiceImpl;      // 用户业务服务
@@ -56,6 +67,12 @@ public class LoginController {
     @Autowired
     private RedisUtil redisUtil;                  // Redis缓存工具
 
+    @Autowired
+    private UserActivityLogServiceImpl activityLogService;
+
+    @Autowired
+    private UserRepository userRepository;
+
     /**
      * 用户登录接口
      * 支持管理员和普通用户双重身份认证
@@ -64,21 +81,40 @@ public class LoginController {
      * @return 认证结果及JWT令牌
      */
     @PostMapping("/login")
-    @AccessLimit(seconds = 3, maxCount = 10)  // 限流配置：3秒内最多10次请求
+    @AccessLimit(seconds = 3, maxCount = 10)  // 登录接口限流，Redis 不可用时由拦截器降级放行
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        // 优先验证管理员身份
-        if (adminServiceImpl.authenticateAdmin(loginRequest.getUsername(), loginRequest.getPassword())) {
-            String token = JwtUtils.generateToken(loginRequest.getUsername());
-            return ResponseEntity.ok().body(new LoginResponse("Admin", token));
+        if (loginRequest == null
+                || loginRequest.getUsername() == null || loginRequest.getUsername().trim().isEmpty()
+                || loginRequest.getPassword() == null || loginRequest.getPassword().trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "请填写用户名和密码"));
         }
 
-        // 验证普通用户身份
-        if (userServiceImpl.authenticateUser(loginRequest.getUsername(), loginRequest.getPassword())) {
-            String token = JwtUtils.generateToken(loginRequest.getUsername());
-            return ResponseEntity.ok().body(new LoginResponse("User", token));
-        }
+        String username = loginRequest.getUsername().trim();
+        String password = loginRequest.getPassword();
 
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login failed");
+        try {
+            if (adminServiceImpl.authenticateAdmin(username, password)) {
+                String token = JwtUtils.generateToken(username);
+                return ResponseEntity.ok().body(new LoginResponse("Admin", token));
+            }
+
+            if (userServiceImpl.authenticateUser(username, password)) {
+                String token = JwtUtils.generateToken(username);
+                userServiceImpl.markLastLogin(username);
+                activityLogService.record(null, username, "User", userServiceImpl.getUserIDByToken(token), "LOGIN_SUCCESS", "登录成功", "/api/login", "SUCCESS", null);
+                return ResponseEntity.ok().body(new LoginResponse("User", token));
+            }
+
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "用户名或密码错误"));
+        } catch (Exception ex) {
+            logger.error("/api/login failed for user: {}", username, ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "message", "登录接口异常，请检查 hnblue_v2_dev_control 中 user/admin 表字段、Redis 限流服务和后端日志。",
+                    "error", ex.getClass().getSimpleName()
+            ));
+        }
     }
 
     /**
@@ -90,65 +126,66 @@ public class LoginController {
      */
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest registerRequest) {
-        // 用户名格式校验：3-20位字母数字下划线短横线
-        if (registerRequest.getUsername() == null || !registerRequest.getUsername().matches("^[a-zA-Z0-9_-]{3,20}$")) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid username");
-        }
-        // 密码长度校验：至少8位
-        if (registerRequest.getPassword() == null || registerRequest.getPassword().length() < 8) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Password too short");
-        }
-        // 邮箱格式校验：标准邮箱格式
-        if (registerRequest.getEmail() == null || !registerRequest.getEmail().matches("^[\\w.%+-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$")) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid email format");
-        }
-        // 生日格式校验：YYYY-MM-DD格式
-        if (registerRequest.getBirthdate() == null || !registerRequest.getBirthdate().matches("^\\d{4}-\\d{2}-\\d{2}$")) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid birthdate format");
+        if (registerRequest == null) {
+            return badRequest("请填写注册信息");
         }
 
-        // 执行用户注册业务逻辑
-        boolean isRegistered = userServiceImpl.registerUser(registerRequest.getUsername(),
-                registerRequest.getPassword(), registerRequest.getEmail(), registerRequest.getBirthdate());
+        String username = normalizeUsername(registerRequest.getUsername());
+        String email = normalizeEmail(registerRequest.getEmail());
+        String birthdate = normalizeBirthdate(registerRequest.getBirthdate());
+        String password = registerRequest.getPassword();
 
-        if (isRegistered) {
-            return ResponseEntity.ok().body("Registration successful!");
-        } else {
-            return ResponseEntity.badRequest().body("Registration failed!");
+        if (username == null || !username.matches("^[a-zA-Z0-9_-]{3,20}$")) {
+            return badRequest("用户名需为 3-20 位字母、数字、下划线或短横线");
+        }
+        if (!PasswordPolicy.isValid(password)) {
+            return badRequest(PasswordPolicy.MESSAGE);
+        }
+        if (email == null || !email.matches("^[\\w.%+-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$")) {
+            return badRequest("邮箱格式不正确");
+        }
+        if (birthdate == null) {
+            return badRequest("生日格式应为 YYYY-MM-DD");
+        }
+
+        if (userRepository.existsByName(username)) {
+            return badRequest("用户名已存在");
+        }
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            return badRequest("邮箱已存在");
+        }
+
+        try {
+            boolean isRegistered = userServiceImpl.registerUser(username, password, email, birthdate);
+            return isRegistered ? ResponseEntity.ok().body("Registration successful!")
+                    : ResponseEntity.badRequest().body("注册失败，请检查用户名或邮箱是否已存在");
+        } catch (IllegalArgumentException ex) {
+            return badRequest(ex.getMessage());
+        } catch (DataIntegrityViolationException ex) {
+            logger.warn("/api/register unique constraint conflict for username={} emailHash={}", username, Integer.toHexString(email.hashCode()));
+            return badRequest("用户名或邮箱已存在，请更换后重试");
         }
     }
 
-    /**
-     * 密码重置初始化接口
-     * 验证用户信息并发送重置邮件
-     *
-     * @param resetRequest 重置请求体（用户名、邮箱、新密码）
-     * @return 重置流程初始化结果
-     */
     @PostMapping("/initiateReset")
     public ResponseEntity<?> initiateReset(@RequestBody ResetRequest resetRequest) {
-        // 验证用户身份并发送重置邮件
-        boolean isUserVerified = userServiceImpl.verifyUser(resetRequest.getUsername(),
-                resetRequest.getEmail(), resetRequest.getNewPassword());
+        if (resetRequest == null || !PasswordPolicy.isValid(resetRequest.getNewPassword())) {
+            return badRequest(PasswordPolicy.MESSAGE);
+        }
+        String username = normalizeUsername(resetRequest.getUsername());
+        String email = normalizeEmail(resetRequest.getEmail());
+
+        boolean isUserVerified = userServiceImpl.verifyUser(username, email, resetRequest.getNewPassword());
 
         if (!isUserVerified) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("User verification failed. No matching records found or no emails sent");
         }
 
-        // 在Redis中记录重置状态，有效期10分钟
-        redisUtil.set("resetPassword:" + resetRequest.getUsername(), "等待用户点击中", 600);
+        redisUtil.set("resetPassword:" + username, "等待用户点击中", 600);
         return ResponseEntity.ok().body("验证邮件已发送。请检查您的邮箱完成密码重置过程。");
     }
 
-    /**
-     * 令牌验证与密码重置接口
-     * 验证重置令牌的有效性并执行密码更新
-     *
-     * @param token 重置令牌
-     * @param encryptedPassword Base64编码的加密新密码
-     * @return 密码重置结果
-     */
     @GetMapping("/verifyToken")
     public ResponseEntity<?> verifyTokenAndResetPassword(@RequestParam("token") String token,
                                                          @RequestParam("newPassword") String encryptedPassword) {
@@ -215,7 +252,39 @@ public class LoginController {
      */
     private String decryptNewPassword(String encryptedPassword) {
         byte[] decodedBytes = Base64.getDecoder().decode(encryptedPassword);
-        return new String(decodedBytes);
+        return new String(decodedBytes, StandardCharsets.UTF_8);
+    }
+
+    private ResponseEntity<?> badRequest(String message) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+    }
+
+    private String normalizeUsername(String username) {
+        if (username == null) {
+            return null;
+        }
+        String value = username.trim();
+        return value.isEmpty() ? null : value;
+    }
+
+    private String normalizeEmail(String email) {
+        if (email == null) {
+            return null;
+        }
+        String value = email.trim().toLowerCase(Locale.ROOT);
+        return value.isEmpty() ? null : value;
+    }
+
+    private String normalizeBirthdate(String birthdate) {
+        if (birthdate == null) {
+            return null;
+        }
+        String value = birthdate.trim().replace('/', '-');
+        try {
+            return LocalDate.parse(value).toString();
+        } catch (DateTimeParseException ex) {
+            return null;
+        }
     }
 
     // ============================ 内部请求体类定义 ============================
@@ -235,7 +304,7 @@ public class LoginController {
 
         @Override
         public String toString() {
-            return "LoginRequest{username='" + username + '\'' + ", password='" + password + '\'' + '}';
+            return "LoginRequest{username=" + username + ", password=[PROTECTED]}";
         }
     }
 
@@ -260,7 +329,7 @@ public class LoginController {
 
         @Override
         public String toString() {
-            return "RegisterRequest{username=" + username + ", password=" + password +
+            return "RegisterRequest{username=" + username + ", password=[PROTECTED]" +
                     ", email=" + email + ", birthdate=" + birthdate + "}";
         }
     }
@@ -302,7 +371,7 @@ public class LoginController {
 
         @Override
         public String toString() {
-            return "LoginResponse{userType=" + userType + ", token=" + token + "}";
+            return "LoginResponse{userType=" + userType + ", token=[PROTECTED]}";
         }
     }
 }

@@ -21,6 +21,7 @@ package com.example.jpaspringboot.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity // 标识为JPA实体类，对应数据库表
@@ -40,6 +41,7 @@ public class User {
     private String name;
 
     private String salt;  //在实践中，通常不会为盐设置数据库层面的唯一性约束。
+    @Column(name = "password_hash")
     private String passwordHash;  // 存储哈希值，而不是实际密码
 
     @Column(unique = true, nullable = false)
@@ -51,6 +53,9 @@ public class User {
     @Lob
     @Column(name = "avatar",columnDefinition = "LONGBLOB")
     private byte[] avatar;  // 用于存储图片的二进制数据
+
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
 
 
     // ==================== 构造方法 ====================
@@ -243,7 +248,17 @@ public class User {
         this.avatar = avatar;
     }
 
+
+    public LocalDateTime getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public void setLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
+    }
+
+    @Override
     public String toString() {
-        return "User{id = " + id + ", name = " + name + ", salt = " + salt + ", passwordHash = " + passwordHash + ", email = " + email + ", birthdate = " + birthdate + ", avatar = " + avatar + "}";
+        return "User{id = " + id + ", name = " + name + "}";
     }
 }

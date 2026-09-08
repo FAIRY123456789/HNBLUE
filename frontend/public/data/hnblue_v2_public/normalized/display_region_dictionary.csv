@@ -1,0 +1,26 @@
+region_id,region_name,region_level,parent_region_id,ecosystem_type,source_scope,needs_boundary_file,is_simulated,notes
+REG_GLOBAL,全球,OTHER,,MANGROVE,public_result_package,0,0,Display dictionary generated from normalized public results.
+REG_HI,海南省,PROVINCE,,MANGROVE,public_result_package,0,0,Display dictionary generated from normalized public results.
+REG_HI_DONGFANG,海南岛-东方,SITE_AREA,REG_HI,MANGROVE,public_result_package,1,0,Display dictionary generated from normalized public results.
+REG_HI_DONGZHAIGANG,海南岛-东寨港,SITE_AREA,REG_HI,MANGROVE,public_result_package,1,0,Display dictionary generated from normalized public results.
+REG_HI_GUANNAN,海南岛-冠南,SITE_AREA,REG_HI,MANGROVE,public_result_package,1,0,Display dictionary generated from normalized public results.
+REG_HI_HUACHANGWAN,海南岛-花场湾,SITE_AREA,REG_HI,MANGROVE,public_result_package,1,0,Display dictionary generated from normalized public results.
+REG_HI_HUIWEN,海南岛-会文,SITE_AREA,REG_HI,MANGROVE,public_result_package,1,0,Display dictionary generated from normalized public results.
+REG_HI_ISLAND,海南岛,PROVINCE,REG_HI,MANGROVE,public_result_package,0,0,Display dictionary generated from normalized public results.
+REG_HI_MANIAOGANG,海南岛-马袅港,SITE_AREA,REG_HI,MANGROVE,public_result_package,1,0,Display dictionary generated from normalized public results.
+REG_HI_PUQIAN,海南岛-铺前,SITE_AREA,REG_HI,MANGROVE,public_result_package,1,0,Display dictionary generated from normalized public results.
+REG_HI_XINYINGGANG,海南岛-新英港,SITE_AREA,REG_HI,MANGROVE,public_result_package,1,0,Display dictionary generated from normalized public results.
+REG_HI_YANGPUGANG,海南岛-洋浦港,SITE_AREA,REG_HI,MANGROVE,public_result_package,1,0,Display dictionary generated from normalized public results.
+REG_WENCHANG,文昌市,CITY,,MANGROVE,public_result_package,1,0,Display dictionary generated from normalized public results.
+REG_WENCHANG_BAMEN_BAY,文昌八门湾自然保护区,PROTECTED_AREA,,MANGROVE,public_result_package,1,0,Display dictionary generated from normalized public results.
+REG_万宁市,万宁市,OTHER,,MANGROVE,public_result_package,0,0,Display dictionary generated from normalized public results.
+REG_三亚市,三亚市,OTHER,,MANGROVE,public_result_package,0,0,Display dictionary generated from normalized public results.
+REG_东方市,东方市,OTHER,,MANGROVE,public_result_package,0,0,Display dictionary generated from normalized public results.
+REG_临高县,临高县,OTHER,,MANGROVE,public_result_package,0,0,Display dictionary generated from normalized public results.
+REG_乐东县,乐东县,OTHER,,MANGROVE,public_result_package,0,0,Display dictionary generated from normalized public results.
+REG_儋州市,儋州市,OTHER,,MANGROVE,public_result_package,0,0,Display dictionary generated from normalized public results.
+REG_昌江县,昌江县,OTHER,,MANGROVE,public_result_package,0,0,Display dictionary generated from normalized public results.
+REG_海口市,海口市,OTHER,,MANGROVE,public_result_package,0,0,Display dictionary generated from normalized public results.
+REG_澄迈县,澄迈县,OTHER,,MANGROVE,public_result_package,0,0,Display dictionary generated from normalized public results.
+REG_琼海市,琼海市,OTHER,,MANGROVE,public_result_package,0,0,Display dictionary generated from normalized public results.
+REG_陵水县,陵水县,OTHER,,MANGROVE,public_result_package,0,0,Display dictionary generated from normalized public results.

@@ -29,20 +29,56 @@ import com.example.jpaspringboot.entity.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.SecureRandom;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 public class JwtUtils {
 
-    private static final long EXPIRE_DURATION = 604800; // 十分钟，以毫秒为单位
+    private static final long DEFAULT_TTL_SECONDS = 604800L;
+    private static final long EXPIRE_DURATION_MILLIS = resolveTtlMillis();
+    private static final Key key = resolveSigningKey();
 
-    // JWT签名密钥（256位）
-    private static String secret = "abcdfghiabcdfghiabcdfghiabcdfghi";
+    private static Key resolveSigningKey() {
+        String configured = firstNonBlank(
+                System.getenv("HNBLUE_JWT_SECRET"),
+                System.getProperty("hnblue.jwt.secret")
+        );
+        if (configured == null) {
+            byte[] generated = new byte[32];
+            new SecureRandom().nextBytes(generated);
+            System.err.println("HNBLUE_JWT_SECRET is not set; using a process-local signing key. Existing tokens will be invalid after restart.");
+            return Keys.hmacShaKeyFor(generated);
+        }
+        byte[] bytes = configured.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length < 32) {
+            throw new IllegalStateException("HNBLUE_JWT_SECRET must contain at least 32 UTF-8 bytes");
+        }
+        return Keys.hmacShaKeyFor(bytes);
+    }
 
-    // 从字符串密钥生成HMAC-SHA密钥对象
-    private static Key key = Keys.hmacShaKeyFor(secret.getBytes());
+    private static long resolveTtlMillis() {
+        String configured = firstNonBlank(
+                System.getenv("HNBLUE_JWT_TTL_SECONDS"),
+                System.getProperty("hnblue.jwt.ttl-seconds")
+        );
+        try {
+            long seconds = configured == null ? DEFAULT_TTL_SECONDS : Long.parseLong(configured);
+            if (seconds <= 0) throw new NumberFormatException("non-positive value");
+            return Math.multiplyExact(seconds, 1000L);
+        } catch (ArithmeticException | NumberFormatException ex) {
+            throw new IllegalStateException("HNBLUE_JWT_TTL_SECONDS must be a positive integer", ex);
+        }
+    }
+
+    private static String firstNonBlank(String first, String second) {
+        if (first != null && !first.isBlank()) return first.trim();
+        if (second != null && !second.isBlank()) return second.trim();
+        return null;
+    }
 
     /**
      * 生成基础JWT令牌（仅包含用户名）
@@ -52,7 +88,7 @@ public class JwtUtils {
      */
     public static String generateToken(String username) {
         Date now = new Date();
-        Date expiration = new Date(now.getTime() + 1000 *EXPIRE_DURATION);
+        Date expiration = new Date(now.getTime() + EXPIRE_DURATION_MILLIS);
 
         return Jwts.builder()
                 .setHeaderParam("typ", "JWT")
@@ -93,7 +129,7 @@ public class JwtUtils {
         claims.put("email", user.getEmail());
 
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + EXPIRE_DURATION);
+        Date expiryDate = new Date(now.getTime() + EXPIRE_DURATION_MILLIS);
 
         JwtBuilder builder = Jwts.builder()
                 .setClaims(claims)

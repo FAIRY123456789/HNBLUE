@@ -55,7 +55,10 @@ public class AdminServiceImpl implements AdminService {
         for (int i = 100000; i <= 100002; i++) {
             String username = "Admin_" + i;
             // 测试密码，生产环境应使用复杂密码
-            String password = "123456";
+            String password = System.getenv("HNBLUE_TEST_ADMIN_PASSWORD");
+            if (password == null || password.isBlank()) {
+                throw new IllegalStateException("HNBLUE_TEST_ADMIN_PASSWORD is required");
+            }
             addAdmin(username, password);
         }
     }

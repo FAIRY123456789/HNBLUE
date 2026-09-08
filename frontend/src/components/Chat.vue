@@ -1,5 +1,5 @@
-<!-- 
-通用AI助手组件 - HNBLUEChat海南蓝碳数字化系统AI助手
+﻿<!--
+通用AI助手组件 - 海南蓝碳数字化系统AI助手
 
 功能概述：
 • 通用智能对话：支持用户与AI进行自然语言交互
@@ -21,7 +21,7 @@
     <div class="chat-panel">
         <!-- 标题栏 -->
         <div class="chat-title">
-            HNBLUEChat-海南蓝碳数字化系统AI助手
+            海南蓝碳数字化系统AI助手
             <button class="close-btn" @click="closeChat">×</button>
         </div>
 
@@ -88,6 +88,7 @@ import { ElMessage } from 'element-plus';
 import { ref, nextTick, defineEmits, onUnmounted, watch } from 'vue';
 import { MdPreview } from 'md-editor-v3';
 import 'md-editor-v3/lib/style.css';
+import { parseAiStreamPayload } from '@/utils/aiStreamParser';
 
 // 组件事件和属性定义
 const emit = defineEmits(['close']);
@@ -107,7 +108,7 @@ const formData = ref({ content: '' });
 const messageList = ref([
     {
         type: 1,
-        content: ['欢迎使用 HNBLUE AI 智能助手，有任何关于蓝碳系统的问题都可以问我哦！']
+        content: ['欢迎使用蓝碳 AI 智能助手，有任何关于蓝碳系统的问题都可以问我哦！']
     }
 ]);
 const loading = ref(false);

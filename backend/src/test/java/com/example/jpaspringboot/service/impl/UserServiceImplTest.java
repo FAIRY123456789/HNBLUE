@@ -152,7 +152,7 @@ public class UserServiceImplTest {
         when(userRepository.findByName("newUser")).thenReturn(null);
         when(userRepository.save(any(User.class))).thenReturn(mockUser);
 
-        boolean result = userServiceImpl.registerUser("newUser", "password", "email", "birthdate");
+        boolean result = userServiceImpl.registerUser("newUser", "Password123", "email", "birthdate");
 
         assertTrue(result);
         verify(userRepository, times(1)).findByName("newUser");

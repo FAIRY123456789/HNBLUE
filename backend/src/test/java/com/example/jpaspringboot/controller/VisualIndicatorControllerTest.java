@@ -23,11 +23,13 @@
  */
 package com.example.jpaspringboot.controller;
 
+import com.example.jpaspringboot.entity.VisualIndicatorData;
+import com.example.jpaspringboot.repository.VisualIndicatorRepository;
 import com.example.jpaspringboot.JpAspringbootApplication;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -35,7 +37,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.hamcrest.Matchers.*;
 
-@SpringBootTest(classes = JpAspringbootApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = JpAspringbootApplication.class)
 @AutoConfigureMockMvc
 public class VisualIndicatorControllerTest {
 
@@ -44,15 +46,21 @@ public class VisualIndicatorControllerTest {
     private MockMvc mockMvc;
 
     // 随机分配的测试服务器端口
-    @LocalServerPort
-    private int port;
+    @Autowired
+    private VisualIndicatorRepository repository;
+
+    @BeforeEach
+    void seedCurrentIndicator() {
+        repository.deleteAll();
+        repository.save(new VisualIndicatorData(null, "\u743c\u6d77", "mangrove_area", 120.5, "ha", "controller test seed", 2024));
+    }
 
     /**
      * 测试获取当前指标数据接口的成功场景
      *
      * 验证要点：
      * • 接口可访问性及HTTP状态码
-     * • 响应内容类型符合JSON格式规范  
+     * • 响应内容类型符合JSON格式规范
      * • 返回数据结构完整性校验
      * • 关键业务字段存在性验证
      *

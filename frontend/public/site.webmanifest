@@ -1,0 +1,21 @@
+{
+  "name": "HNBLUE",
+  "short_name": "HNBLUE",
+  "description": "海南蓝碳生态碳汇数据库及数字化应用平台",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#eef6f3",
+  "theme_color": "#08364d",
+  "icons": [
+    {
+      "src": "/branding/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/branding/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

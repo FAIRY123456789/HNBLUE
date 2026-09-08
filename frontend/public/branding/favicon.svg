@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title description">
+  <title id="title">HNBLUE</title>
+  <desc id="description">由字母 H、海浪和叶片组成的蓝绿色图形标识</desc>
+  <rect width="64" height="64" rx="14" fill="#08364d"/>
+  <path d="M18 15v34M46 15v34" fill="none" stroke="#3cc6b0" stroke-width="7" stroke-linecap="round"/>
+  <path d="M18 34c7-10 15-10 22-2 2 2 4 3 6 3" fill="none" stroke="#d7fff6" stroke-width="6" stroke-linecap="round"/>
+  <path d="M39 18c4-6 10-7 14-5-1 7-6 11-13 10" fill="#78d6a3"/>
+</svg>

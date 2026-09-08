@@ -1,4 +1,4 @@
-<!-- 
+<!--
 通用聊天面板组件 - 支持实时对话和Markdown渲染
 
 功能概述：
@@ -16,7 +16,7 @@
 <template>
   <div class="chat-panel">
     <!-- 聊天标题 -->
-    <div class="chat-title">HNBLUEChat</div>
+    <div class="chat-title">蓝碳智能助手</div>
 
     <!-- 消息显示区域 -->
     <div class="message-panel" id="message-panel">
@@ -127,7 +127,7 @@ export default {
       });
       this.loading = true;
       // 建立EventSource连接
-      const eventSource = new EventSource(`http://localhost:8088/api/chat/stream?message=${message}`);
+      const eventSource = new EventSource(`/api/chat/stream?message=${message}`);
       this.formData.content = '';
       /**
        * 处理服务器推送的消息

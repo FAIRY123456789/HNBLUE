@@ -1,0 +1,68 @@
+﻿+----------------------------+-----------+
+| table_name                 | row_count |
++----------------------------+-----------+
+| t_data_source              |         9 |
+| t_region                   |        25 |
+| t_satellite_mangrove_cover |        66 |
+| t_satellite_region_metric  |         0 |
+| t_literature_carbon_record |         0 |
+| t_allometry_equation       |         0 |
++----------------------------+-----------+
++--------------+-------------+-------------+
+| TABLE_SCHEMA | table_count | approx_rows |
++--------------+-------------+-------------+
+| hnblue       |          13 |        4804 |
++--------------+-------------+-------------+
++------------------------------+----------------------------+-----------------+-----------+---------------------------------------------------------------------------------+
+| TABLE_SCHEMA                 | TABLE_NAME                 | COLUMN_NAME     | DATA_TYPE | COLUMN_TYPE                                                                     |
++------------------------------+----------------------------+-----------------+-----------+---------------------------------------------------------------------------------+
+| hainan_blue_carbon_intl      | t_allometry_equation       | equation_id     | bigint    | bigint                                                                          |
+| hainan_blue_carbon_intl      | t_allometry_equation       | dataset_id      | bigint    | bigint                                                                          |
+| hainan_blue_carbon_intl      | t_allometry_equation       | reference_id    | bigint    | bigint                                                                          |
+| hainan_blue_carbon_intl      | t_allometry_equation       | country         | varchar   | varchar(100)                                                                    |
+| hainan_blue_carbon_intl      | t_allometry_equation       | province        | varchar   | varchar(100)                                                                    |
+| hainan_blue_carbon_intl      | t_allometry_equation       | scientific_name | varchar   | varchar(160)                                                                    |
+| hainan_blue_carbon_intl      | t_allometry_equation       | equation_form   | varchar   | varchar(255)                                                                    |
+| hainan_blue_carbon_intl      | t_allometry_equation       | component       | enum      | enum('TOTAL','ABOVEGROUND','BELOWGROUND','STEM','BRANCH','LEAF','ROOT','OTHER') |
+| hainan_blue_carbon_intl      | t_allometry_equation       | coefficient_a   | double    | double                                                                          |
+| hainan_blue_carbon_intl      | t_allometry_equation       | coefficient_b   | double    | double                                                                          |
+| hainan_blue_carbon_intl      | t_allometry_equation       | coefficient_c   | double    | double                                                                          |
+| hainan_blue_carbon_intl      | t_allometry_equation       | coefficient_d   | double    | double                                                                          |
+| hainan_blue_carbon_intl      | t_allometry_equation       | r_squared       | double    | double                                                                          |
+| hainan_blue_carbon_intl      | t_allometry_equation       | sample_size     | int       | int                                                                             |
+| hainan_blue_carbon_intl      | t_allometry_equation       | dbh_min_cm      | double    | double                                                                          |
+| hainan_blue_carbon_intl      | t_allometry_equation       | dbh_max_cm      | double    | double                                                                          |
+| hainan_blue_carbon_intl      | t_allometry_equation       | height_min_m    | double    | double                                                                          |
+| hainan_blue_carbon_intl      | t_allometry_equation       | height_max_m    | double    | double                                                                          |
+| hainan_blue_carbon_intl      | t_allometry_equation       | unit_note       | varchar   | varchar(255)                                                                    |
+| hainan_blue_carbon_intl      | t_allometry_equation       | created_at      | timestamp | timestamp                                                                       |
+| hainan_blue_carbon_intl      | t_literature_carbon_record | record_id       | bigint    | bigint                                                                          |
+| hainan_blue_carbon_intl      | t_literature_carbon_record | reference_id    | bigint    | bigint                                                                          |
+| hainan_blue_carbon_intl      | t_literature_carbon_record | region_id       | bigint    | bigint                                                                          |
+| hainan_blue_carbon_intl      | t_literature_carbon_record | site_name       | varchar   | varchar(255)                                                                    |
+| hainan_blue_carbon_intl      | t_literature_carbon_record | latitude        | decimal   | decimal(10,7)                                                                   |
+| hainan_blue_carbon_intl      | t_literature_carbon_record | longitude       | decimal   | decimal(10,7)                                                                   |
+| hainan_blue_carbon_intl      | t_literature_carbon_record | ecosystem_type  | varchar   | varchar(120)                                                                    |
+| hainan_blue_carbon_intl      | t_literature_carbon_record | carbon_pool     | enum      | enum('AGB','BGB','SOC','DEADWOOD','LITTER','TOTAL','OTHER')                     |
+| hainan_blue_carbon_intl      | t_literature_carbon_record | value_mg_ha     | decimal   | decimal(18,6)                                                                   |
+| hainan_blue_carbon_intl      | t_literature_carbon_record | depth_top_cm    | decimal   | decimal(10,3)                                                                   |
+| hainan_blue_carbon_intl      | t_literature_carbon_record | depth_bottom_cm | decimal   | decimal(10,3)                                                                   |
+| hainan_blue_carbon_intl      | t_literature_carbon_record | method_note     | text      | text                                                                            |
+| hainan_blue_carbon_intl      | t_literature_carbon_record | source_id       | bigint    | bigint                                                                          |
+| hainan_blue_carbon_intl      | t_literature_carbon_record | created_at      | timestamp | timestamp                                                                       |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | metric_id       | bigint    | bigint                                                                          |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | product_id      | bigint    | bigint                                                                          |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | region_id       | bigint    | bigint                                                                          |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | indicator_code  | varchar   | varchar(80)                                                                     |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | metric_year     | int       | int                                                                             |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | metric_month    | tinyint   | tinyint                                                                         |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | metric_date     | date      | date                                                                            |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | value           | decimal   | decimal(18,6)                                                                   |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | unit            | varchar   | varchar(64)                                                                     |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | stat_method     | enum      | enum('MEAN','MEDIAN','MIN','MAX','SUM','COUNT','AREA','PERCENTILE','OTHER')     |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | source_id       | bigint    | bigint                                                                          |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | version_id      | bigint    | bigint                                                                          |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | qc_flag_id      | bigint    | bigint                                                                          |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | is_simulated    | tinyint   | tinyint(1)                                                                      |
+| hainan_blue_carbon_satellite | t_satellite_region_metric  | created_at      | timestamp | timestamp                                                                       |
++------------------------------+----------------------------+-----------------+-----------+---------------------------------------------------------------------------------+

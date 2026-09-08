@@ -1,0 +1,778 @@
+{
+  "dataset": "HNBLUE V2.0 public mangrove area timeseries",
+  "is_simulated": 0,
+  "regions": [
+    {
+      "region_id": "REG_HI",
+      "region_name": "海南省",
+      "unit": "ha",
+      "points": [
+        {
+          "year": 2010,
+          "value": 4190.7,
+          "source_id": "SRC_LIT_HI_GHG_2022",
+          "is_proxy": 0
+        },
+        {
+          "year": 2020,
+          "value": 4644.1,
+          "source_id": "SRC_LIT_HI_GHG_2022",
+          "is_proxy": 0
+        }
+      ]
+    },
+    {
+      "region_id": "REG_HI_DONGFANG",
+      "region_name": "海南岛-东方",
+      "unit": "ha",
+      "points": [
+        {
+          "year": 1990,
+          "value": 26.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 1995,
+          "value": 38.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2000,
+          "value": 30.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2005,
+          "value": 60.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2010,
+          "value": 67.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2015,
+          "value": 77.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2020,
+          "value": 80.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        }
+      ]
+    },
+    {
+      "region_id": "REG_HI_DONGZHAIGANG",
+      "region_name": "海南岛-东寨港",
+      "unit": "ha",
+      "points": [
+        {
+          "year": 1990,
+          "value": 1615.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 1995,
+          "value": 1540.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2000,
+          "value": 1664.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2005,
+          "value": 1723.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2010,
+          "value": 1787.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2015,
+          "value": 1740.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2020,
+          "value": 1751.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        }
+      ]
+    },
+    {
+      "region_id": "REG_HI_GUANNAN",
+      "region_name": "海南岛-冠南",
+      "unit": "ha",
+      "points": [
+        {
+          "year": 1990,
+          "value": 227.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 1995,
+          "value": 191.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2000,
+          "value": 193.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2005,
+          "value": 174.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2010,
+          "value": 173.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2015,
+          "value": 156.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2020,
+          "value": 167.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        }
+      ]
+    },
+    {
+      "region_id": "REG_HI_HUACHANGWAN",
+      "region_name": "海南岛-花场湾",
+      "unit": "ha",
+      "points": [
+        {
+          "year": 1990,
+          "value": 355.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 1995,
+          "value": 300.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2000,
+          "value": 234.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2005,
+          "value": 220.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2010,
+          "value": 367.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2015,
+          "value": 334.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2020,
+          "value": 327.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        }
+      ]
+    },
+    {
+      "region_id": "REG_HI_HUIWEN",
+      "region_name": "海南岛-会文",
+      "unit": "ha",
+      "points": [
+        {
+          "year": 1990,
+          "value": 1055.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 1995,
+          "value": 989.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2000,
+          "value": 817.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2005,
+          "value": 826.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2010,
+          "value": 869.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2015,
+          "value": 878.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2020,
+          "value": 904.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        }
+      ]
+    },
+    {
+      "region_id": "REG_HI_MANIAOGANG",
+      "region_name": "海南岛-马袅港",
+      "unit": "ha",
+      "points": [
+        {
+          "year": 1990,
+          "value": 55.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 1995,
+          "value": 30.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2000,
+          "value": 46.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2005,
+          "value": 50.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2010,
+          "value": 192.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2015,
+          "value": 112.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2020,
+          "value": 124.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        }
+      ]
+    },
+    {
+      "region_id": "REG_HI_PUQIAN",
+      "region_name": "海南岛-铺前",
+      "unit": "ha",
+      "points": [
+        {
+          "year": 1990,
+          "value": 170.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 1995,
+          "value": 167.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2000,
+          "value": 147.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2005,
+          "value": 145.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2010,
+          "value": 160.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2015,
+          "value": 138.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2020,
+          "value": 141.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        }
+      ]
+    },
+    {
+      "region_id": "REG_HI_XINYINGGANG",
+      "region_name": "海南岛-新英港",
+      "unit": "ha",
+      "points": [
+        {
+          "year": 1990,
+          "value": 328.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 1995,
+          "value": 301.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2000,
+          "value": 289.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2005,
+          "value": 230.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2010,
+          "value": 273.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2015,
+          "value": 290.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2020,
+          "value": 298.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        }
+      ]
+    },
+    {
+      "region_id": "REG_HI_YANGPUGANG",
+      "region_name": "海南岛-洋浦港",
+      "unit": "ha",
+      "points": [
+        {
+          "year": 1990,
+          "value": 747.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 1995,
+          "value": 730.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2000,
+          "value": 498.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2005,
+          "value": 492.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2010,
+          "value": 609.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2015,
+          "value": 627.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        },
+        {
+          "year": 2020,
+          "value": 682.0,
+          "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+          "is_proxy": 0
+        }
+      ]
+    },
+    {
+      "region_id": "REG_WENCHANG_BAMEN_BAY",
+      "region_name": "文昌八门湾自然保护区",
+      "unit": "ha",
+      "points": [
+        {
+          "year": 2022,
+          "value": 1223.3,
+          "source_id": "SRC_LIT_BAMEN_SOC_2022",
+          "is_proxy": 0
+        }
+      ]
+    }
+  ],
+  "supplement_metrics": [
+    {
+      "record_id": "DEMOAREA-00003",
+      "region_id": "REG_HI_DONGFANG",
+      "region_name": "海南岛-东方",
+      "indicator_name": "mangrove_area_2020_index_1990_100",
+      "indicator_label": "2020 面积指数(1990=100)",
+      "value": 307.6923076923077,
+      "unit": "index",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00018",
+      "region_id": "REG_HI_MANIAOGANG",
+      "region_name": "海南岛-马袅港",
+      "indicator_name": "mangrove_area_2020_index_1990_100",
+      "indicator_label": "2020 面积指数(1990=100)",
+      "value": 225.45454545454547,
+      "unit": "index",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00006",
+      "region_id": "REG_HI_DONGZHAIGANG",
+      "region_name": "海南岛-东寨港",
+      "indicator_name": "mangrove_area_2020_index_1990_100",
+      "indicator_label": "2020 面积指数(1990=100)",
+      "value": 108.42105263157895,
+      "unit": "index",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00012",
+      "region_id": "REG_HI_HUACHANGWAN",
+      "region_name": "海南岛-花场湾",
+      "indicator_name": "mangrove_area_2020_index_1990_100",
+      "indicator_label": "2020 面积指数(1990=100)",
+      "value": 92.11267605633803,
+      "unit": "index",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00027",
+      "region_id": "REG_HI_YANGPUGANG",
+      "region_name": "海南岛-洋浦港",
+      "indicator_name": "mangrove_area_2020_index_1990_100",
+      "indicator_label": "2020 面积指数(1990=100)",
+      "value": 91.29852744310575,
+      "unit": "index",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00024",
+      "region_id": "REG_HI_XINYINGGANG",
+      "region_name": "海南岛-新英港",
+      "indicator_name": "mangrove_area_2020_index_1990_100",
+      "indicator_label": "2020 面积指数(1990=100)",
+      "value": 90.85365853658537,
+      "unit": "index",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00015",
+      "region_id": "REG_HI_HUIWEN",
+      "region_name": "海南岛-会文",
+      "indicator_name": "mangrove_area_2020_index_1990_100",
+      "indicator_label": "2020 面积指数(1990=100)",
+      "value": 85.68720379146919,
+      "unit": "index",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00021",
+      "region_id": "REG_HI_PUQIAN",
+      "region_name": "海南岛-铺前",
+      "indicator_name": "mangrove_area_2020_index_1990_100",
+      "indicator_label": "2020 面积指数(1990=100)",
+      "value": 82.94117647058823,
+      "unit": "index",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00009",
+      "region_id": "REG_HI_GUANNAN",
+      "region_name": "海南岛-冠南",
+      "indicator_name": "mangrove_area_2020_index_1990_100",
+      "indicator_label": "2020 面积指数(1990=100)",
+      "value": 73.568281938326,
+      "unit": "index",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00002",
+      "region_id": "REG_HI_DONGFANG",
+      "region_name": "海南岛-东方",
+      "indicator_name": "mangrove_area_2020_rank_among_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积排名",
+      "value": 9.0,
+      "unit": "rank",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00017",
+      "region_id": "REG_HI_MANIAOGANG",
+      "region_name": "海南岛-马袅港",
+      "indicator_name": "mangrove_area_2020_rank_among_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积排名",
+      "value": 8.0,
+      "unit": "rank",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00020",
+      "region_id": "REG_HI_PUQIAN",
+      "region_name": "海南岛-铺前",
+      "indicator_name": "mangrove_area_2020_rank_among_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积排名",
+      "value": 7.0,
+      "unit": "rank",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00008",
+      "region_id": "REG_HI_GUANNAN",
+      "region_name": "海南岛-冠南",
+      "indicator_name": "mangrove_area_2020_rank_among_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积排名",
+      "value": 6.0,
+      "unit": "rank",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00023",
+      "region_id": "REG_HI_XINYINGGANG",
+      "region_name": "海南岛-新英港",
+      "indicator_name": "mangrove_area_2020_rank_among_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积排名",
+      "value": 5.0,
+      "unit": "rank",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00011",
+      "region_id": "REG_HI_HUACHANGWAN",
+      "region_name": "海南岛-花场湾",
+      "indicator_name": "mangrove_area_2020_rank_among_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积排名",
+      "value": 4.0,
+      "unit": "rank",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00026",
+      "region_id": "REG_HI_YANGPUGANG",
+      "region_name": "海南岛-洋浦港",
+      "indicator_name": "mangrove_area_2020_rank_among_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积排名",
+      "value": 3.0,
+      "unit": "rank",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00014",
+      "region_id": "REG_HI_HUIWEN",
+      "region_name": "海南岛-会文",
+      "indicator_name": "mangrove_area_2020_rank_among_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积排名",
+      "value": 2.0,
+      "unit": "rank",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00005",
+      "region_id": "REG_HI_DONGZHAIGANG",
+      "region_name": "海南岛-东寨港",
+      "indicator_name": "mangrove_area_2020_rank_among_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积排名",
+      "value": 1.0,
+      "unit": "rank",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00004",
+      "region_id": "REG_HI_DONGZHAIGANG",
+      "region_name": "海南岛-东寨港",
+      "indicator_name": "mangrove_area_2020_share_of_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积占比",
+      "value": 39.137237371479664,
+      "unit": "percent",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00013",
+      "region_id": "REG_HI_HUIWEN",
+      "region_name": "海南岛-会文",
+      "indicator_name": "mangrove_area_2020_share_of_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积占比",
+      "value": 20.205632543585157,
+      "unit": "percent",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00025",
+      "region_id": "REG_HI_YANGPUGANG",
+      "region_name": "海南岛-洋浦港",
+      "indicator_name": "mangrove_area_2020_share_of_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积占比",
+      "value": 15.243629861421546,
+      "unit": "percent",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00010",
+      "region_id": "REG_HI_HUACHANGWAN",
+      "region_name": "海南岛-花场湾",
+      "indicator_name": "mangrove_area_2020_share_of_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积占比",
+      "value": 7.308895842646401,
+      "unit": "percent",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00022",
+      "region_id": "REG_HI_XINYINGGANG",
+      "region_name": "海南岛-新英港",
+      "indicator_name": "mangrove_area_2020_share_of_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积占比",
+      "value": 6.660706303084488,
+      "unit": "percent",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00007",
+      "region_id": "REG_HI_GUANNAN",
+      "region_name": "海南岛-冠南",
+      "indicator_name": "mangrove_area_2020_share_of_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积占比",
+      "value": 3.732677693339294,
+      "unit": "percent",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00019",
+      "region_id": "REG_HI_PUQIAN",
+      "region_name": "海南岛-铺前",
+      "indicator_name": "mangrove_area_2020_share_of_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积占比",
+      "value": 3.1515422440768885,
+      "unit": "percent",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00016",
+      "region_id": "REG_HI_MANIAOGANG",
+      "region_name": "海南岛-马袅港",
+      "indicator_name": "mangrove_area_2020_share_of_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积占比",
+      "value": 2.7715690657130083,
+      "unit": "percent",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    },
+    {
+      "record_id": "DEMOAREA-00001",
+      "region_id": "REG_HI_DONGFANG",
+      "region_name": "海南岛-东方",
+      "indicator_name": "mangrove_area_2020_share_of_tracked_sites",
+      "indicator_label": "2020 跟踪区域面积占比",
+      "value": 1.788109074653554,
+      "unit": "percent",
+      "source_id": "SRC_LIT_FORESTS_HI_MANGROVE_RS_2023",
+      "is_proxy": 0
+    }
+  ]
+}

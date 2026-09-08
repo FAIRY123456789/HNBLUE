@@ -1,0 +1,3 @@
+record_id,species,organ,biomass_kg,dbh_cm,height_m,equation_id,source
+SYN-CAT-001,Example tree alpha,aboveground,21.5,10.2,6.1,SYN-EQ-001,synthetic
+SYN-CAT-002,Example tree beta,aboveground,48.3,18.5,9.4,SYN-EQ-002,synthetic

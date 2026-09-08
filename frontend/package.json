@@ -1,10 +1,11 @@
 {
-  "name": "hellovue",
+  "name": "hainan-blue-carbon-platform",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build"
+    "build": "vue-cli-service build",
+    "audit:delivery": "node scripts/audit-public-presentation.mjs"
   },
   "dependencies": {
     "@kangc/v-md-editor": "^2.3.18",

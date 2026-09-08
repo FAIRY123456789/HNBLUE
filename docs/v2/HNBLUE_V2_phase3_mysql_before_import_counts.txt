@@ -1,0 +1,15 @@
+﻿+-------------------------+-------+
+| metric                  | value |
++-------------------------+-------+
+| core_data_source_before |     0 |
+| core_region_before      |     0 |
+| sat_cover_before        |     0 |
+| sat_metric_before       |     0 |
+| intl_lit_carbon_before  |     0 |
+| intl_allometry_before   |     0 |
++-------------------------+-------+
++--------------+-------------+-------------+
+| TABLE_SCHEMA | table_count | approx_rows |
++--------------+-------------+-------------+
+| hnblue       |          13 |        4804 |
++--------------+-------------+-------------+

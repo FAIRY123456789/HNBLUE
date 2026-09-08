@@ -1,0 +1,28 @@
+﻿+-------------------------------------+-------+
+| metric                              | value |
++-------------------------------------+-------+
+| remote_csv_rows                     |   147 |
+| remote_source_fk_matches            |     2 |
+| remote_region_fk_matches            |    10 |
+| remote_indicator_dictionary_matches |     0 |
+| literature_csv_rows                 |    33 |
+| literature_source_fk_matches        |     3 |
+| literature_region_fk_matches        |     7 |
+| literature_reference_matches        |     0 |
+| allometry_csv_rows                  |     2 |
+| allometry_source_fk_matches         |     1 |
+| allometry_reference_matches         |     0 |
++-------------------------------------+-------+
++------------+--------------------------------------------------------+---------------------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| check_type | target_table                                           | missing_or_unmapped_field                         | reason                                                                                                        |
++------------+--------------------------------------------------------+---------------------------------------------------+---------------------------------------------------------------------------------------------------------------+
+| FIELD_GAP  | hainan_blue_carbon_satellite.t_satellite_region_metric | is_proxy                                          | CSV has 30 proxy rows; target table has no is_proxy column.                                                   |
+| FIELD_GAP  | hainan_blue_carbon_intl.t_literature_carbon_record     | is_proxy/unit/indicator                           | Target table has no is_proxy or unit column; indicator is compressed into carbon_pool and method_note.        |
+| FIELD_GAP  | hainan_blue_carbon_intl.t_allometry_equation           | source_id/region_id/is_proxy/indicator/value/unit | Target table has equation fields but lacks source_id, region_id, is_proxy, indicator, value and unit columns. |
++------------+--------------------------------------------------------+---------------------------------------------------+---------------------------------------------------------------------------------------------------------------+
+
+## CSV natural key duplicate static checks
+
+satellite_region_metric_import_ready.csv: key=['region_id', 'indicator', 'metric_year', 'metric_month', 'source_id']; duplicate_rows=0; rows=147
+intl_literature_carbon_record_import_ready.csv: key=['region_id', 'indicator', 'year_or_period', 'source_id', 'value', 'unit']; duplicate_rows=0; rows=33
+intl_allometry_equation_import_ready.csv: key=['source_id', 'scientific_name', 'equation_form', 'component']; duplicate_rows=0; rows=2
