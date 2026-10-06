@@ -12,7 +12,7 @@ The project integrates a Vue 3 client, a Spring Boot application and agent-orche
 
 - Source-aware blue-carbon data catalog with region, year, indicator, quality, proxy, simulation, citation, and license metadata.
 - Public data explorer and governance workbench for mangrove area, regional indicators, literature evidence, and work orders.
-- Hainan city/county thematic map with traceable GeoJSON and attributed remote-sensing/UAV figures.
+- Hainan city/county base map with public boundary geometry and clearly labelled synthetic metric overlays.
 - Browsing APIs for BAAD, Tallo, ChinAllomeTree, and GWM-style external data packages.
 - Spring Boot proxy for single and batch CatBoost inference.
 - Virtual-plot scenarios, carbon-value conversion, and offline model interpretation artifacts.
@@ -268,7 +268,7 @@ SHAP figures, sensitivity analysis, response curves, and virtual plots explain m
 
 Validation records are under `docs/context/`, `docs/v2/`, and `reports/`. They document specific local environments and dates; they are not service-level agreements.
 
-Known boundaries include intentionally absent field/flux/UAV raw data, static rather than live remote-sensing assets, environment-dependent generation availability, and research-analysis pages that are not all wired into the public UI.
+Known boundaries include intentionally absent real field, flux, UAV, and remote-sensing data; environment-dependent generation availability; and research-analysis pages that are not all wired into the public UI.
 
 ## License and third-party material
 
