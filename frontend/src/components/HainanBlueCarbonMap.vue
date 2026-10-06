@@ -61,7 +61,6 @@
         </div>
       </section>
 
-      <p class="status-note">缺失项统一标记为暂无数据；蓝碳面积仅展示已核验记录。</p>
     </article>
   </section>
 </template>
@@ -70,6 +69,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import * as echarts from 'echarts';
 import hainanGeo from '@/assets/geo/hainan.json';
+import { publicUrl } from '@/utils/urls';
 
 const chartRef = ref(null);
 const adminLevel = ref('county');
@@ -79,6 +79,25 @@ const cityCountyGeo = ref(null);
 const profiles = ref([]);
 const activeCode = ref('469005');
 let chart = null;
+let themeObserver = null;
+
+function isDarkTheme() {
+  return document.documentElement.dataset.hnTheme === 'dark' || document.documentElement.classList.contains('theme-dark');
+}
+
+function mapPalette() {
+  return isDarkTheme()
+    ? {
+        low: '#15221f', mid: '#28473f', high: '#47796f', missing: '#11191a',
+        label: '#aebbb8', legend: '#7f918d', border: '#05090a', emphasis: '#765f3c',
+        emphasisLabel: '#e0e5e3', tooltip: '#080e10', tooltipBorder: '#2a3d39',
+      }
+    : {
+        low: '#d8f1eb', mid: '#6bb9a8', high: '#0d6b57', missing: '#d8dedb',
+        label: '#123f37', legend: '#31554d', border: '#ffffff', emphasis: '#d99b35',
+        emphasisLabel: '#072c27', tooltip: '#ffffff', tooltipBorder: '#c7ddd7',
+      };
+}
 
 const metrics = [
   { key: 'basic', label: '基础信息', unit: '', field: null },
@@ -228,7 +247,7 @@ function mapData() {
       name: feature.properties?.regionName,
       value: value === null ? undefined : value,
       regionCode: code,
-      itemStyle: value === null ? { areaColor: '#d8dedb' } : undefined,
+      itemStyle: value === null ? { areaColor: mapPalette().missing } : undefined,
     };
   });
 }
@@ -270,8 +289,15 @@ function renderMap() {
   }
   echarts.registerMap(mapName.value, currentGeo.value);
   const range = valueRange();
+  const palette = mapPalette();
   chart.setOption({
-    tooltip: { trigger: 'item', formatter: tooltip },
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'item', formatter: tooltip,
+      backgroundColor: palette.tooltip,
+      borderColor: palette.tooltipBorder,
+      textStyle: { color: palette.label },
+    },
     visualMap: range ? {
       min: range.min,
       max: range.max === range.min ? range.min + 1 : range.max,
@@ -279,8 +305,8 @@ function renderMap() {
       calculable: false,
       left: 14,
       bottom: 54,
-      inRange: { color: ['#d8f1eb', '#6bb9a8', '#0d6b57'] },
-      textStyle: { color: '#31554d' },
+      inRange: { color: [palette.low, palette.mid, palette.high] },
+      textStyle: { color: palette.legend },
     } : undefined,
     series: [{
       name: adminLevel.value === 'county' ? '海南市县级蓝碳资料' : '海南省级地图',
@@ -290,14 +316,14 @@ function renderMap() {
       roam: true,
       scaleLimit: { min: 0.85, max: 8 },
       selectedMode: false,
-      layoutCenter: ['50%', adminLevel.value === 'county' && mapScope.value === 'sansha' ? '50%' : '52%'],
+      layoutCenter: ['55%', adminLevel.value === 'county' && mapScope.value === 'sansha' ? '56%' : '58%'],
       layoutSize: mapScope.value === 'sansha' ? '88%' : '96%',
       labelLayout: { hideOverlap: true },
-      label: { show: adminLevel.value === 'county', color: '#123f37', fontSize: 11, fontWeight: 800 },
-      itemStyle: { borderColor: '#ffffff', borderWidth: 1.2, areaColor: '#d8f1eb' },
+      label: { show: adminLevel.value === 'county', color: palette.label, fontSize: 11, fontWeight: 800 },
+      itemStyle: { borderColor: palette.border, borderWidth: 1.2, areaColor: palette.low },
       emphasis: {
-        label: { show: true, color: '#072c27', fontWeight: 900 },
-        itemStyle: { areaColor: '#d99b35', borderColor: '#ffffff', borderWidth: 2 },
+        label: { show: true, color: palette.emphasisLabel, fontWeight: 900 },
+        itemStyle: { areaColor: palette.emphasis, borderColor: palette.border, borderWidth: 2 },
       },
     }],
   }, true);
@@ -305,8 +331,8 @@ function renderMap() {
 
 async function loadAssets() {
   const [geoResponse, profileResponse] = await Promise.all([
-    fetch('/data/hainan-map/hainan_city_county_web.geojson', { cache: 'no-cache' }),
-    fetch('/data/hainan-map/hainan_city_county_profile.json', { cache: 'no-cache' }),
+    fetch(publicUrl('/data/hainan-map/hainan_city_county_web.geojson'), { cache: 'no-cache' }),
+    fetch(publicUrl('/data/hainan-map/hainan_city_county_profile.json'), { cache: 'no-cache' }),
   ]);
   cityCountyGeo.value = await geoResponse.json();
   profiles.value = await profileResponse.json();
@@ -322,11 +348,14 @@ watch([adminLevel, mapScope, metricKey, cityCountyGeo, profiles], () => nextTick
 
 onMounted(() => {
   loadAssets();
+  themeObserver = new MutationObserver(() => renderMap());
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-hn-theme'] });
   window.addEventListener('resize', resizeMap);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', resizeMap);
+  themeObserver?.disconnect();
   chart?.dispose();
 });
 </script>
@@ -341,7 +370,7 @@ onBeforeUnmount(() => {
 
 .map-board {
   position: relative;
-  min-height: 640px;
+  min-height: 570px;
   overflow: hidden;
   border: 1px solid var(--hn-border);
   border-radius: 8px;
@@ -398,7 +427,7 @@ onBeforeUnmount(() => {
 .metric-strip button.active {
   border-color: var(--hn-accent);
   background: var(--hn-accent);
-  color: #08201c;
+  color: var(--hn-on-accent);
 }
 
 .metric-strip {
@@ -431,7 +460,7 @@ onBeforeUnmount(() => {
 
 .region-panel {
   min-height: auto;
-  padding: 16px;
+  padding: 14px;
   border: 1px solid var(--hn-border);
   border-radius: 8px;
   background: var(--hn-panel-solid);
@@ -446,9 +475,9 @@ onBeforeUnmount(() => {
 }
 
 h3 {
-  margin: 8px 0 8px;
+  margin: 6px 0 7px;
   color: var(--hn-text);
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1.25;
 }
 
@@ -456,7 +485,7 @@ h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .profile-pills span {
@@ -476,21 +505,21 @@ h3 {
 .status-note {
   margin: 0;
   color: var(--hn-muted);
-  line-height: 1.65;
-  font-size: 14px;
+  line-height: 1.52;
+  font-size: 13px;
   font-weight: 400;
 }
 
 .info-section {
-  margin-top: 14px;
-  padding-top: 12px;
+  margin-top: 11px;
+  padding-top: 10px;
   border-top: 1px solid var(--hn-border);
 }
 
 .info-section h4 {
-  margin: 0 0 8px;
+  margin: 0 0 5px;
   color: var(--hn-text);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -503,9 +532,9 @@ h3 {
 
 .info-list div {
   display: grid;
-  grid-template-columns: 112px minmax(0, 1fr);
-  gap: 10px;
-  padding: 9px 0;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 8px;
+  padding: 7px 0;
   border-bottom: 1px solid color-mix(in srgb, var(--hn-border) 68%, transparent);
 }
 
@@ -515,7 +544,7 @@ h3 {
 
 dt {
   color: var(--hn-muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -523,7 +552,8 @@ dd {
   min-width: 0;
   margin: 0;
   color: var(--hn-text);
-  line-height: 1.55;
+  font-size: 13px;
+  line-height: 1.42;
   font-weight: 400;
   overflow-wrap: anywhere;
 }
@@ -532,20 +562,20 @@ dd {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .source-link {
   display: inline-flex;
   align-items: center;
-  min-height: 32px;
+  min-height: 30px;
   padding: 0 10px;
   border-radius: 7px;
   background: var(--hn-accent);
-  color: #08201c;
+  color: var(--hn-on-accent);
   text-decoration: none;
   font-weight: 800;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .source-link.ghost {
@@ -562,12 +592,12 @@ dd {
   font-size: 12px;
 }
 
-:global(:root[data-hn-theme="dark"]) .segmented button.active,
-:global(:root.theme-dark) .segmented button.active,
-:global(:root[data-hn-theme="dark"]) .metric-strip button.active,
-:global(:root.theme-dark) .metric-strip button.active,
-:global(:root[data-hn-theme="dark"]) .source-link,
-:global(:root.theme-dark) .source-link {
+:global(:root[data-hn-theme="dark"] .segmented button.active),
+:global(:root.theme-dark .segmented button.active),
+:global(:root[data-hn-theme="dark"] .metric-strip button.active),
+:global(:root.theme-dark .metric-strip button.active),
+:global(:root[data-hn-theme="dark"] .source-link),
+:global(:root.theme-dark .source-link) {
   background: var(--hn-surface-strong);
   color: var(--hn-text);
 }

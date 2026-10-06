@@ -36,6 +36,8 @@ import java.util.List;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
+    List<User> findByIdIn(List<Integer> ids);
+
     /**
      * 根据用户名精确查询用户
      * 派生查询方法：自动生成 SELECT * FROM user WHERE name = ?

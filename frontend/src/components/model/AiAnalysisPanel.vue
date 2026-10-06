@@ -4,6 +4,10 @@
       <div>
         <p class="eyebrow">AI Analysis</p>
         <h3>{{ title }}</h3>
+        <div v-if="providerLabel" class="provider-line" role="status">
+          <span>{{ providerLabel }}</span>
+          <small v-if="sourceCount">已结合 {{ sourceCount }} 条知识库来源</small>
+        </div>
       </div>
       <ActionButton size="sm" variant="secondary" :label="isLoading ? '生成中' : buttonLabel" :disabled="disabled || isLoading" @click="$emit('generate')" />
     </div>
@@ -26,6 +30,8 @@ defineProps({
   error: { type: String, default: '' },
   isLoading: { type: Boolean, default: false },
   status: { type: String, default: '' },
+  providerLabel: { type: String, default: '' },
+  sourceCount: { type: Number, default: 0 },
   disabled: { type: Boolean, default: false },
   buttonLabel: { type: String, default: '重新生成解释' },
 });
@@ -49,6 +55,9 @@ defineEmits(['generate']);
 }
 .eyebrow { margin: 0 0 4px; color: var(--hn-accent); font-size: 12px; font-weight: 900; }
 h3 { margin: 0; color: var(--hn-text); }
+.provider-line { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.provider-line span { display: inline-flex; min-height: 25px; align-items: center; padding: 0 9px; border-radius: 999px; background: #e9f7f1; color: #0d6b57; font-size: 12px; font-weight: 900; }
+.provider-line small { color: var(--hn-muted); }
 .ai-empty, .ai-error, .ai-progress { color: var(--hn-muted); line-height: 1.6; }
 .ai-progress { font-size: 13px; }
 .ai-error { color: var(--hn-danger); }

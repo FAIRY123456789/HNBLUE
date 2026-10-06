@@ -32,7 +32,7 @@ export function parseAiStreamPayload(raw) {
   const delta = firstText(payload?.delta, payload?.textResponse, payload?.text, payload?.content, payload?.message);
   return {
     status: type === "status" ? payload?.status || payload?.message : payload?.status,
-    delta: type === "done" || type === "error" ? "" : stripThinkBlocks(delta),
+    delta: type === "done" || type === "error" || type === "status" ? "" : stripThinkBlocks(delta),
     meta: payload?.meta || payload?.sources || payload?.metrics || payload?.model ? payload : null,
     done: type === "done" || payload?.done === true,
     error: type === "error" ? payload?.message || "AI 服务连接失败，请稍后重试。" : "",

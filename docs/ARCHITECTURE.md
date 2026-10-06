@@ -10,19 +10,25 @@ HNBLUE 将海南蓝碳相关的结构化事实、地图与遥感图件、外部�
 
 ## 2. 当前总体拓扑
 
+总体系统采用“浏览器—应用边界—内部能力”的分层结构。为避免图形误读，主图只表达严格纵向的 Agent 信任链；数据、缓存和模型等并列能力在下表中说明。
+
 ```mermaid
-flowchart LR
-    U[浏览器] --> V[Vue 3]
-    V -->|REST / SSE| B[Spring Boot :8088]
-    B --> DB[(MySQL 8)]
-    B --> R[(Redis 单节点)]
-    B -->|HTTP 代理| F[Flask :8880]
-    F --> C[CatBoost pipeline]
-    B -->|SSE 代理| A[AnythingLLM :3001]
-    A --> K[hnblue 私域知识工作区]
-    A --> L[DeepSeek 或已配置 LLM]
-    V --> P[版本化静态 JSON / GeoJSON / 图件]
-    B --> X[data/raw 或 data/examples]
+flowchart TB
+    A[Vue 3 客户端]
+    B[Spring Boot API 与 Agent 编排器]
+    C[身份、会话、输入与策略检查]
+    D[本地 BM25 + 字符 TF-IDF + LSA + 标题检索]
+    E[加权 RRF、来源去重、证据充分性与冲突判断]
+    F[可选 DeepSeek 受证据约束生成]
+    G[引用校验与摘录式降级]
+    H[SSE 答案、来源、指标与证据状态]
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H
 ```
 
 当前实现使用单节点 Redis。`docs/archive/redis-cluster-legacy/` 记录的是历史集群实验，不是默认部署要求。
@@ -36,7 +42,9 @@ flowchart LR
 | 数据层 | MySQL 8、JPA、JDBC | 用户、治理业务记录、区域/来源/指标等结构化数据；JDBC 也用于可控的数据目录查询 |
 | 缓存与短期状态 | Redis | 热点查询缓存、登录窗口计数、临时封禁和密码重置状态 |
 | 模型服务 | Python 3.11、Flask、CatBoost、scikit-learn | 可信模型制品加载、单条和批量推理、模型分析接口 |
-| 知识服务 | AnythingLLM、检索增强生成、DeepSeek/其他 LLM | 从 `hnblue` 工作区检索私域材料，生成带上下文的回答 |
+| Agent 编排 | Spring Boot、MySQL、SSE | 身份解析、20 条短期窗口、用户级会话历史、最小化记忆、答案状态机和流式输出 |
+| 检索与证据 | Python、BM25、字符 TF-IDF、LSA、标题召回、RRF | 构建可移植索引、混合召回、来源去重、域外拒答、冲突与证据状态判断 |
+| 受约束生成 | 可选 DeepSeek | 只读取本轮证据块生成带 `[S1]` 引用的回答；未配置或校验失败时回退摘录 |
 
 ## 4. 三条核心调用链
 
@@ -65,18 +73,23 @@ Vue -> POST /api/model/predict-carbon
 
 模型制品接受 12 个结构、气候、位置及类别特征，训练目标来自 BAAD 流程中的 `m.so`（地上部干生物量）。原始输出不能直接当作单位面积碳储量；面积、密度、碳比例、单位、本地校准和不确定性需要在科研使用时另行处理。
 
-### 4.3 私域知识问答
+### 4.3 Agentic RAG 问答
 
 ```text
-Vue EventSource
-  -> GET /api/chat/stream-carbon
+Vue POST + 流式响应
+  -> POST /api/chat/stream-carbon
   -> Spring CarbonAssistantController
-  -> AnythingLLM workspace stream-chat
-  -> 私域检索 + DeepSeek/已配置大语言模型生成
+  -> 会话归属 + 提示注入检查 + 最小上下文
+  -> Flask /api/rag/context
+  -> 混合检索 + 证据门控
+  -> 可选 DeepSeek 受证据约束生成
+  -> 引用校验或摘录式回退
   -> status / delta / meta / done / error 事件
 ```
 
-服务器发送事件（Server-Sent Events，SSE）适合“一次提问、服务端持续增量输出”的单向场景。Spring Boot 保管 AnythingLLM API Key，转发上游流并统一对浏览器输出事件；浏览器因此不需要知道内网地址或密钥。AnythingLLM 负责工作区文档检索和会话编排，DeepSeek 或其他已配置的大语言模型（Large Language Model，LLM）负责生成文本。
+Spring Boot 是 Agent 编排器而不是简单转发器。它在服务端解析身份、隔离会话、读取最近 20 条消息、生成最小检索上下文、调用本地检索、执行生成与引用校验，并保存答案、来源、证据状态和注入风险。DeepSeek Key 由环境变量或数据库加密密钥服务管理，浏览器永远不接触供应商凭据。
+
+私有知识通过 `HNBLUE_RAG_SOURCE` 挂载在仓库之外；构建产物通过 `HNBLUE_RAG_CHUNKS` 指向本地索引。公开仓库只提供 `rag/examples/knowledge/` 中的合成说明与测试记录。
 
 ## 5. 数据与来源边界
 
@@ -84,7 +97,8 @@ Vue EventSource
 - `frontend/public/data/` 保存可公开展示的地图、规范化摘要和无人机（Unmanned Aerial Vehicle，UAV）资产清单。
 - `data/examples/` 是 15 个很小的合成 CSV，只用于接口演示和解析测试。
 - `data/raw/` 是本地完整外部数据目录，默认被 Git 忽略；公开仓库不包含完整 BAAD、Tallo、ChinAllomeTree 或 Global Wetland Map（GWM）数据。
-- 完整本地包的 528,420 条记录是外部科研参考记录总数，不代表海南本地实测样本量。
+- `rag/examples/knowledge/` 是合成 RAG 样例；`rag/source/`、`rag/artifacts/`、对话和真实评测记录全部忽略。
+- 授权完整数据的行数、样本和验证证据不在公开仓库披露。
 
 静态地图和遥感资产随前端版本发布，适合可复现演示；它们不是实时遥感流水线。MySQL 则用于可更新的业务和结构化事实数据。
 
@@ -117,15 +131,15 @@ Vue EventSource
 ## 8. 网络与密钥边界
 
 - 公网入口应为 HTTPS 反向代理；只把前端和 Spring Boot 暴露给用户。
-- MySQL、Redis、Flask 和 AnythingLLM 应绑定私网或本机接口。
-- 数据库、邮件、AnythingLLM、DeepSeek、JWT 和字段加密密钥均由环境变量提供。
+- MySQL、Redis、Flask 模型/RAG 服务应绑定私网或本机接口。
+- 数据库、邮件、DeepSeek、JWT 和字段加密密钥均由环境变量或服务端加密存储提供。
 - 跨域资源共享（Cross-Origin Resource Sharing，CORS）默认只允许显式本地来源，部署时通过 `CORS_ALLOWED_ORIGINS` 配置正式域名。
 - 任意 Redis 读写接口和限流演示接口仅在 Spring `dev` Profile 下注册。
 - Git 不跟踪 `.env`、数据库卷、完整数据、生成日志、Python 缓存和内部软著材料。
 
 ## 9. 部署与可用性判断
 
-基础演示至少需要 MySQL、Redis、Flask、Spring Boot 和 Vue。AnythingLLM 是可选依赖；未配置时，普通数据、工作单和模型功能仍可单独运行。模型和 AI 健康状态应通过 Spring Boot 的代理接口检查，而不是从公网直接探测内部端口。
+基础演示至少需要 MySQL、Redis、Flask、Spring Boot 和 Vue。DeepSeek 是可选生成能力；未配置时，普通数据、工作单、模型功能、本地检索和摘录式回答仍可运行。模型与 RAG 健康状态应通过 Spring Boot 的代理接口检查，而不是从公网直接探测内部端口。
 
 当前代码适合受控环境中的完整项目演示。若进入公网生产环境，还需要补充统一认证/授权过滤链、密码重置安全改造、入口网关限流、审计日志、密钥托管、数据库迁移工具、容器健康检查、持续集成和独立海南数据验证。
 
@@ -137,5 +151,6 @@ Vue EventSource
 - 鉴权与限流：`controller/LoginController.java`、`util/JwtUtils.java`、`interceptor/AccessLimitInterceptor.java`
 - 工作单：`controller/WorkOrderController.java`、`service/WorkOrderService.java`
 - 模型代理：`controller/ModelProxyController.java`、`flask_model/carbon_model_api/`
-- AI 流：`controller/CarbonAssistantController.java`
+- Agent 编排：`controller/CarbonAssistantController.java`、`service/ai/`
+- 检索与证据：`rag/`、`flask_model/carbon_model_api/rag_api.py`
 - 配置：`backend/src/main/resources/application.properties`、`.env.example`

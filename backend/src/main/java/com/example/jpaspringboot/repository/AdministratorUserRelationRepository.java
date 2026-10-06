@@ -26,6 +26,10 @@ import com.example.jpaspringboot.entity.AdministratorUserRelation;
 import com.example.jpaspringboot.entity.User;
 import com.example.jpaspringboot.entity.ids.AdministratorUserRelationId;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -45,5 +49,25 @@ public interface AdministratorUserRelationRepository extends JpaRepository<Admin
      * @return 该用户所属的所有管理员关系列表
      */
     List<AdministratorUserRelation> findByUser(User user);
+
+    @Query(
+            value = "SELECT r.user_id " +
+                    "FROM administrator_user_relation r " +
+                    "WHERE r.admin_id = :adminId " +
+                    "ORDER BY r.user_id",
+            countQuery = "SELECT COUNT(*) FROM administrator_user_relation WHERE admin_id = :adminId",
+            nativeQuery = true)
+    Page<Integer> findUserIdsByAdminId(@Param("adminId") Integer adminId, Pageable pageable);
+
+    @Query("SELECT r.user FROM AdministratorUserRelation r WHERE r.admin.id = :adminId AND (" +
+            "LOWER(r.user.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(r.user.email) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    Page<User> searchUsersByAdminId(@Param("adminId") Integer adminId,
+                                    @Param("keyword") String keyword,
+                                    Pageable pageable);
+
+    @Query("SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END FROM AdministratorUserRelation r " +
+            "WHERE r.admin.id = :adminId AND r.user.id = :userId")
+    boolean existsRelation(@Param("adminId") Integer adminId, @Param("userId") Integer userId);
 
 }

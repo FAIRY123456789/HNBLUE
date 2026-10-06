@@ -1127,13 +1127,12 @@ INSERT INTO `t_indicator_dictionary` (`indicator_code`,`indicator_name_cn`,`indi
 ON DUPLICATE KEY UPDATE `indicator_name_cn`=VALUES(`indicator_name_cn`), `indicator_domain`=VALUES(`indicator_domain`), `default_unit`=VALUES(`default_unit`), `description`=VALUES(`description`);
 
 INSERT INTO `t_region` (`region_code`,`parent_region_id`,`region_name`,`region_level`,`province`,`city`,`ecosystem_type`,`data_scope`,`remark`) VALUES
-('HN',NULL,'海南省','PROVINCE','海南省',NULL,'MIXED','INTERNAL','V2.0 默认省域根节点'),
-('HN_WENCHANG',(SELECT region_id FROM (SELECT region_id FROM `t_region` WHERE region_code='HN') AS tmp),'文昌市','CITY','海南省','文昌市','MANGROVE','INTERNAL','V2.0 默认文昌示范节点')
+('DEMO_ROOT',NULL,'示例区域','OTHER','示例省',NULL,'OTHER','PUBLIC','完全合成的公开演示根节点'),
+('DEMO_REGION_A',(SELECT region_id FROM (SELECT region_id FROM `t_region` WHERE region_code='DEMO_ROOT') AS tmp),'示例区域甲','OTHER','示例省','示例市甲','OTHER','PUBLIC','完全合成的公开演示节点')
 ON DUPLICATE KEY UPDATE `region_name`=VALUES(`region_name`), `region_level`=VALUES(`region_level`), `ecosystem_type`=VALUES(`ecosystem_type`), `remark`=VALUES(`remark`);
 
 INSERT INTO `t_data_source` (`source_code`,`source_category`,`source_name`,`publisher`,`is_simulated`,`remark`) VALUES
-('SIMULATED_HNBLUE_V1','SIMULATED','HNBLUE V1.0 模拟展示数据','HNBLUE',1,'仅用于旧版可视化页面演示，不作为正式数据来源'),
-('TO_BE_COLLECTED_WEB','UNKNOWN','待通过浏览器检索与人工核验的数据来源','TBD',0,'后续联网检索数据时逐条补充 URL、访问日期、许可证和引用格式')
+('SYNTHETIC_HNBLUE_PUBLIC','SIMULATED','HNBLUE 公开版合成测试数据','HNBLUE',1,'仅用于接口和界面测试，不作为科研或业务数据来源')
 ON DUPLICATE KEY UPDATE `source_category`=VALUES(`source_category`), `source_name`=VALUES(`source_name`), `is_simulated`=VALUES(`is_simulated`), `remark`=VALUES(`remark`);
 
 SET FOREIGN_KEY_CHECKS = 1;

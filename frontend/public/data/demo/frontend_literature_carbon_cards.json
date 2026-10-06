@@ -1,0 +1,8 @@
+{
+  "dataset": "HNBLUE synthetic evidence card fixture",
+  "is_simulated": 1,
+  "cards": [
+    {"record_id": "DEMO-001", "title": "示例区域甲 · 红树林面积", "subtitle": "Synthetic evidence document A", "year_or_period": "2025", "value": 12.5, "unit": "ha", "quality_level": "DEMO", "is_proxy": 0, "source_url": "https://example.com/hnblue-demo-source-a", "notes": "完全虚构的界面测试记录"},
+    {"record_id": "DEMO-002", "title": "示例区域乙 · 红树林面积", "subtitle": "Synthetic evidence document B", "year_or_period": "2025", "value": 8.3, "unit": "ha", "quality_level": "DEMO", "is_proxy": 1, "source_url": "https://example.com/hnblue-demo-source-b", "notes": "完全虚构的界面测试记录"}
+  ]
+}

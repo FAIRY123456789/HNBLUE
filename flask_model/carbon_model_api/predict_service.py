@@ -39,9 +39,27 @@ import os
 import uuid
 from pathlib import Path
 
-# 加载训练好的 pipeline（预处理器 + 模型）
-MODEL_PATH = Path(__file__).resolve().parent / "catboost_pipeline.pkl"
-model = joblib.load(MODEL_PATH)
+# Public releases do not ship a trained artifact. A private deployment can
+# mount an authorized model through HNBLUE_MODEL_PATH. Without one, the API
+# uses a deterministic synthetic fixture so UI and integration tests remain
+# runnable without presenting fabricated output as a scientific prediction.
+MODEL_PATH = Path(
+    os.getenv("HNBLUE_MODEL_PATH", str(Path(__file__).resolve().parent / "catboost_pipeline.pkl"))
+).expanduser().resolve()
+model = joblib.load(MODEL_PATH) if MODEL_PATH.exists() else None
+MODEL_MODE = "private-artifact" if model is not None else "synthetic-demo"
+
+
+def _predict_frame(frame: pd.DataFrame):
+    if model is not None:
+        return model.predict(frame)
+    height = frame["h.t"].astype(float)
+    diameter = frame["d.bh"].astype(float)
+    canopy = frame["a.cp"].astype(float)
+    age = frame["age"].astype(float)
+    # Deliberately simple, non-calibrated fixture. It preserves monotonic UI
+    # behavior only and must never be used for science or carbon accounting.
+    return 0.18 * height + 0.11 * diameter + 0.07 * canopy + 0.03 * age
 
 # 单样本预测
 def predict_carbon_stock(input_dict):
@@ -61,7 +79,7 @@ def predict_carbon_stock(input_dict):
             'pft': input_dict.get('pft', 'broadleaf')
         }
         X = pd.DataFrame([sample])
-        y_pred = model.predict(X)[0]  # .pkl文件直接保留模型的predict推理能力
+        y_pred = _predict_frame(X)[0]
         return round(float(y_pred), 3)
     except Exception as e:
         raise ValueError(f"预测失败：{e}")
@@ -88,7 +106,7 @@ def batch_predict_carbon_stock(sample_list):
                 'pft': item.get('pft', 'broadleaf')
             })
         df = pd.DataFrame(records)
-        y_preds = model.predict(df)
+        y_preds = _predict_frame(df)
         return [round(float(v), 3) for v in y_preds]
     except Exception as e:
         raise ValueError(f"批量预测失败：{e}")
@@ -134,12 +152,15 @@ def sensitivity_analysis(base_input):
         "sensitivity": results
     }
 
-def save_sensitivity_plot(sens_result, output_dir='sensitivity_plots'):
+def save_sensitivity_plot(sens_result, output_dir=None):
     import matplotlib.pyplot as plt
     import os, uuid
 
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    output_dir = Path(
+        output_dir
+        or os.getenv("HNBLUE_MODEL_OUTPUT_DIR", str(Path(__file__).resolve().parent / "sensitivity_plots"))
+    ).expanduser().resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     params = [r['param'] for r in sens_result['sensitivity']]
     lowers = [r['lower'] for r in sens_result['sensitivity']]
@@ -160,11 +181,11 @@ def save_sensitivity_plot(sens_result, output_dir='sensitivity_plots'):
 
     ax.axhline(
         sens_result["original"], color='red', linestyle='--',
-        label=f'Original prediction: {sens_result["original"]:.2f} t/ha'
+        label=f'Original m.so prediction: {sens_result["original"]:.2f}'
     )
 
     ax.set_title("Prediction Sensitivity to Parameter Perturbations", fontsize=14)
-    ax.set_ylabel("Predicted Carbon Stock (t/ha)", fontsize=12)
+    ax.set_ylabel("Predicted m.so (raw model output)", fontsize=12)
     ax.set_xlabel("Perturbed Parameters", fontsize=12)
     ax.set_ylim(min(lowers) - 1, max(uppers) + 1)
     ax.grid(True, linestyle='--', alpha=0.5)
@@ -172,19 +193,20 @@ def save_sensitivity_plot(sens_result, output_dir='sensitivity_plots'):
 
     plt.tight_layout()
     filename = f"sensitivity_{uuid.uuid4().hex[:8]}.png"
-    path = os.path.join(output_dir, filename)
+    path = output_dir / filename
     plt.savefig(path, dpi=150)
     plt.close()
 
-    return f"http://localhost:8880/sensitivity_plots/{filename}"
+    public_base = os.getenv("HNBLUE_MODEL_PUBLIC_BASE", "").rstrip("/")
+    return f"{public_base}/sensitivity_plots/{filename}"
 
 # 结构文本解释函数
 def explain_sensitivity(sens_result):
-    lines = [f"样地碳储预测为 **{sens_result['original']} t/ha**。"]
+    lines = [f"m.so 原始模型预测为 **{sens_result['original']}**（尚未换算为单位面积碳储量）。"]
     for item in sens_result["sensitivity"]:
         lines.append(
-            f"- 当 `{item['param']}` 变化 ±20% 时，预测区间为 **{item['lower']}–{item['upper']} t/ha**，"
-            f"波动幅度为 **{item['range']} t/ha**。"
+            f"- 当 `{item['param']}` 变化 ±20% 时，原始预测区间为 **{item['lower']}–{item['upper']}**，"
+            f"原始输出波动幅度为 **{item['range']}**。"
         )
     lines.append("下面开始分析这些变量对碳储预测的敏感性及其生态学含义。")
     return "\n".join(lines)

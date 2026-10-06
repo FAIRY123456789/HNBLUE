@@ -57,11 +57,13 @@ h1 {
 }
 
 .subtitle {
-  max-width: 780px;
+  width: 100%;
+  max-width: none;
   margin: 16px 0 0;
   color: var(--hn-muted);
-  font-size: 17px;
+  font-size: clamp(14px, 1.26vw, 17px);
   line-height: 1.75;
+  white-space: nowrap;
 }
 
 .tag-row {
@@ -88,7 +90,7 @@ h1 {
 }
 
 .dark .eyebrow {
-  color: #75dcc6;
+  color: var(--hn-accent);
 }
 
 .dark .subtitle {
@@ -105,5 +107,7 @@ h1 {
     grid-template-columns: 1fr;
     padding-top: 34px;
   }
+
+  .subtitle { white-space: normal; }
 }
 </style>

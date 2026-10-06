@@ -37,6 +37,7 @@ defineProps({
   border-radius: var(--hn-radius);
   background: linear-gradient(180deg, var(--hn-card), var(--hn-surface));
   box-shadow: var(--hn-shadow-soft);
+  overflow: hidden;
 }
 
 .eyebrow {
@@ -51,12 +52,14 @@ h3 {
   margin: 0;
   color: var(--hn-text);
   font-size: 23px;
+  overflow-wrap: anywhere;
 }
 
 .description {
   margin: 10px 0 0;
   color: var(--hn-muted);
   line-height: 1.65;
+  overflow-wrap: anywhere;
 }
 
 dl {
@@ -74,6 +77,7 @@ dd {
   margin: 3px 0 0;
   color: var(--hn-text);
   font-weight: 800;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 </style>

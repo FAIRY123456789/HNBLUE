@@ -1,5 +1,7 @@
 import { reactive, computed } from 'vue';
 
+import { apiUrl } from '@/utils/urls';
+
 const TOKEN_KEY = 'token';
 const ROLE_KEY = 'userType';
 const USER_KEY = 'hnblue_user_info';
@@ -49,7 +51,7 @@ export function useAuth() {
   }
 
   async function login(credentials) {
-    const response = await fetch('/api/login', {
+    const response = await fetch(apiUrl('/api/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials),
@@ -73,7 +75,7 @@ export function useAuth() {
 
   async function refreshUser() {
     if (!state.token) return null;
-    const response = await fetch('/user/info', { headers: authHeaders() });
+    const response = await fetch(apiUrl('/user/info'), { headers: authHeaders() });
     if (response.status === 401) {
       logout();
       throw new Error('登录状态已失效');

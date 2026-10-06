@@ -1,0 +1,3 @@
+region_id,region_name,region_level,parent_region_id,ecosystem_type,source_scope,needs_boundary_file,is_simulated,notes
+DEMO-REGION-A,示例区域甲,OTHER,,OTHER,synthetic_demo,0,1,Fabricated region for UI tests only.
+DEMO-REGION-B,示例区域乙,OTHER,,OTHER,synthetic_demo,0,1,Fabricated region for UI tests only.

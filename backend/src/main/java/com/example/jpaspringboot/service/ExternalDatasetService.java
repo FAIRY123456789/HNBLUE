@@ -604,12 +604,20 @@ public class ExternalDatasetService {
     }
 
     private static Path resolveRawRoot(String configuredRoot) {
-        Path working = Paths.get("").toAbsolutePath().normalize();
+        return resolveRawRoot(configuredRoot, Paths.get("").toAbsolutePath().normalize());
+    }
+
+    static Path resolveRawRoot(String configuredRoot, Path workingDirectory) {
+        Path working = workingDirectory.toAbsolutePath().normalize();
         Path configured = Paths.get(configuredRoot);
         if (!configured.isAbsolute()) configured = working.resolve(configured).normalize();
         if (Files.isDirectory(configured)) return configured;
         Path parentFallback = working.resolve("../data/raw").normalize();
         if (Files.isDirectory(parentFallback)) return parentFallback;
+        // Production starts the executable JAR from <release>/backend/target while
+        // the audited external datasets live at <release>/data/raw.
+        Path releaseFallback = working.resolve("../../data/raw").normalize();
+        if (Files.isDirectory(releaseFallback)) return releaseFallback;
         Path exampleRoot = working.resolve("data/examples").normalize();
         if (Files.isDirectory(exampleRoot)) return exampleRoot;
         Path parentExampleRoot = working.resolve("../data/examples").normalize();

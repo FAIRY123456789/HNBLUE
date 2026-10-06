@@ -73,8 +73,9 @@ import { useAuth } from '@/composables/useAuth';
 import PageShell from '@/components/common/PageShell.vue';
 import UnifiedNav from '@/components/common/UnifiedNav.vue';
 import ActionButton from '@/components/common/ActionButton.vue';
+import { apiUrl } from '@/utils/urls';
 
-const API_BASE = '/api';
+const API_BASE = apiUrl('/api');
 const router = useRouter();
 const auth = useAuth();
 const mode = ref('login');
@@ -84,7 +85,7 @@ const messageType = ref('info');
 const newPassword = ref('');
 const confirmPassword = ref('');
 const credentials = reactive({ username: '', password: '', email: '', birthdate: '' });
-const PASSWORD_RULE_MESSAGE = '???? 8 ????????????????';
+const PASSWORD_RULE_MESSAGE = '密码至少 8 位，且需同时包含英文字母和数字。';
 
 function isStrongPassword(value) {
   return typeof value === 'string' && value.length >= 8 && /[A-Za-z]/.test(value) && /\d/.test(value) && !/\s/.test(value);
@@ -122,7 +123,7 @@ function normalizeBirthdate(value) {
 
 function validateRegisterInput(payload) {
   if (!/^[a-zA-Z0-9_-]{3,20}$/.test(payload.username || '')) return '用户名需为 3-20 位字母、数字、下划线或短横线。';
-  if (!payload.password || payload.password.length < 8) return '密码至少需要 8 位。';
+  if (!isStrongPassword(payload.password)) return PASSWORD_RULE_MESSAGE;
   if (!/^[\w.%+-]+@[\w.-]+\.[a-zA-Z]{2,6}$/.test(payload.email || '')) return '邮箱格式不正确。';
   if (!/^\d{4}-\d{2}-\d{2}$/.test(payload.birthdate || '')) return '生日格式应为 YYYY-MM-DD。';
   return '';

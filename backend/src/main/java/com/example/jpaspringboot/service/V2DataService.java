@@ -18,12 +18,12 @@ import java.util.Set;
 @Service
 public class V2DataService {
 
-    private static final String INDICATOR_DICTIONARY_TABLE = "t_indicator_dictionary";
-    private static final String DATA_SOURCE_TABLE = "t_data_source";
-    private static final String REGION_TABLE = "t_region";
-    private static final String MANGROVE_COVER_TABLE = "t_satellite_mangrove_cover";
-    private static final String REGION_METRIC_TABLE = "t_satellite_region_metric";
-    private static final String LITERATURE_CARBON_TABLE = "t_literature_carbon_record";
+    private static final String INDICATOR_DICTIONARY_TABLE = "hainan_blue_carbon_core.t_indicator_dictionary";
+    private static final String DATA_SOURCE_TABLE = "hainan_blue_carbon_core.t_data_source";
+    private static final String REGION_TABLE = "hainan_blue_carbon_core.t_region";
+    private static final String MANGROVE_COVER_TABLE = "hainan_blue_carbon_satellite.t_satellite_mangrove_cover";
+    private static final String REGION_METRIC_TABLE = "hainan_blue_carbon_satellite.t_satellite_region_metric";
+    private static final String LITERATURE_CARBON_TABLE = "hainan_blue_carbon_intl.t_literature_carbon_record";
     private static final String CARBON_MODEL_PARAMETER_TABLE = "t_carbon_model_parameter";
     private static final String CARBON_MARKET_PRICE_TABLE = "t_carbon_market_price";
     private static final String CARBON_METHODOLOGY_TABLE = "t_carbon_methodology";
@@ -459,10 +459,14 @@ public class V2DataService {
 
     private boolean tableExists(String table) {
         try {
+            String[] parts = table.split("\\.", 2);
+            String schema = parts.length == 2 ? parts[0] : currentDatabase();
+            String tableName = parts.length == 2 ? parts[1] : parts[0];
             Long count = jdbcTemplate.queryForObject(
-                    "select count(1) from information_schema.tables where table_schema = database() and table_name = ?",
+                    "select count(1) from information_schema.tables where table_schema = ? and table_name = ?",
                     Long.class,
-                    table
+                    schema,
+                    tableName
             );
             return count != null && count > 0;
         } catch (DataAccessException ex) {

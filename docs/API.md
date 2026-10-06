@@ -4,7 +4,7 @@
 
 ## 1. 约定与安全边界
 
-- 浏览器应只访问 Spring Boot；模型和 AnythingLLM 由 Spring Boot 代理。
+- 浏览器应只访问 Spring Boot；模型与本地 RAG 服务由 Spring Boot 代理。
 - 需要身份的接口使用 `Authorization: Bearer <JWT>`。
 - 当前代码没有统一的全局响应包：不同控制器会返回业务对象、`{data: ...}`、`{success: ...}` 或错误字符串，调用方应按具体接口处理。
 - 当前也没有覆盖全部路由的统一认证过滤链。用户、管理员和工作单接口在控制器中校验 Token；部分查询、模型和 AI 接口面向受控演示环境开放。
@@ -207,14 +207,16 @@ Flask 还实现 `/api/literature-range`、`/api/sensitivity-analysis`、`/api/se
 
 ## 9. AI 碳助手 SSE
 
-### `GET /api/chat/stream-carbon?message=...&sessionId=...`
+### `POST /api/chat/stream-carbon`
 
-- `message`：必填问题；
-- `sessionId`：可选，会被规范化；未提供时由服务端生成；
+- 请求：`{"message":"问题","sessionId":"浏览器会话标识"}`；
+- `message` 必填，最长 4000 字；
+- `sessionId` 会被规范化，未提供时由服务端生成；
+- `Authorization` 可选；登录用户按 JWT 绑定历史，匿名用户按不可预测会话标识隔离；
 - 响应类型：`text/event-stream`；
 - 缓存：`no-cache`，并设置 `X-Accel-Buffering: no` 防止反向代理缓冲。
 
-前端使用 `EventSource` 接收 JSON 数据事件。事件对象的 `type` 可能为：
+前端使用 `fetch` 读取流式 JSON 数据事件。事件对象的 `type` 可能为：
 
 | type | 含义 |
 |---|---|
@@ -224,11 +226,11 @@ Flask 还实现 `/api/literature-range`、`/api/sensitivity-analysis`、`/api/se
 | `done` | 正常结束 |
 | `error` | 上游连接或解析错误 |
 
-Spring 会过滤上游思维标记，只转发面向用户的文本。AnythingLLM 配置由 `ANYTHINGLLM_API_URL`、`ANYTHINGLLM_API_KEY`、`ANYTHINGLLM_WORKSPACE` 提供，密钥只存在服务端。
+Spring 先调用本地 `/api/rag/context`，再根据证据状态决定拒答、摘录式回答或可选 DeepSeek 生成。生成模型只能引用本轮提供的 `[S1]...[Sn]`；未知引用或无引用事实会触发摘录式回退。`DEEPSEEK_API_KEY` 只存在服务端，私有知识与索引分别由 `HNBLUE_RAG_SOURCE`、`HNBLUE_RAG_CHUNKS` 指向仓库外目录。
 
-`GET /api/chat/stream` 是保留的兼容实现；新页面应使用 `/stream-carbon`。
+`GET /api/chat/stream-carbon?message=...&sessionId=...` 是只使用本地摘录回答的兼容入口；新页面使用 POST。`GET /api/chat/history` 恢复当前身份/会话历史，`DELETE /api/chat/history` 只清理当前身份/会话。
 
-当前 AI SSE 路由没有强制身份验证，也没有消息长度、并发和配额控制。受控演示以外的部署应补充统一鉴权、输入限制、入口限流、内容安全和审计。
+当前 Agent 已实现消息长度限制、会话隔离、提示注入检测、证据门控和引用校验；匿名访问仍被允许。受控演示以外的部署还应补充统一鉴权、并发/配额控制、入口限流、保留期清理和最小化安全审计。
 
 ## 10. 开发 Profile 接口
 

@@ -353,18 +353,18 @@ ol {
   }
 }
 
-:global(:root[data-hn-theme="dark"]) .route-button,
-:global(:root.theme-dark) .route-button {
-  color: #08201c;
+:global(:root[data-hn-theme="dark"] .route-button),
+:global(:root.theme-dark .route-button) {
+  color: var(--hn-on-accent);
 }
 
-:global(:root[data-hn-theme="dark"]) .caution-panel,
-:global(:root.theme-dark) .caution-panel {
+:global(:root[data-hn-theme="dark"] .caution-panel),
+:global(:root.theme-dark .caution-panel) {
   background: rgba(217, 155, 53, 0.12);
 }
 
-:global(:root[data-hn-theme="dark"]) .caution-panel h4,
-:global(:root.theme-dark) .caution-panel h4 {
+:global(:root[data-hn-theme="dark"] .caution-panel h4),
+:global(:root.theme-dark .caution-panel h4) {
   color: #f0cf8a;
 }
 </style>

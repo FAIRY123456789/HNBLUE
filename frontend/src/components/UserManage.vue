@@ -51,7 +51,7 @@ const searchFields = [{ key: 'keyword', label: '姓名/账号/邮箱', placehold
 const toast = reactive({ visible: false, type: 'info', message: '' });
 const editing = ref(false); const editor = reactive({ id: null, name: '', email: '', birthdate: '', password: '' });
 const detailOpen = ref(false); const detail = reactive({ user: null, logs: [] });
-const PASSWORD_RULE_MESSAGE = '???? 8 ????????????????';
+const PASSWORD_RULE_MESSAGE = '密码至少 8 位，且需同时包含英文字母和数字。';
 function isStrongPassword(value) { return typeof value === 'string' && value.length >= 8 && /[A-Za-z]/.test(value) && /\d/.test(value) && !/\s/.test(value); }
 const allChecked = computed(() => users.value.length && selectedIds.value.length === users.value.length);
 function show(message, type = 'info') { toast.message = message; toast.type = type; toast.visible = true; }

@@ -35,29 +35,35 @@
 
       <div ref="messagePanel" class="message-panel" @scroll="handlePanelScroll">
         <article v-for="(item, index) in messages" :key="index" :class="['message', item.role, { streaming: item.streaming }]">
-          <strong>{{ item.role === 'user' ? '你' : '蓝碳 AI' }}</strong>
-          <p v-if="item.role === 'user'">{{ item.content }}</p>
-          <div v-else class="markdown-body">
-            <MdPreview
-              :editorId="`carbon-ai-preview-${index}`"
-              previewTheme="vuepress"
-              :codeFoldable="false"
-              :modelValue="item.rawMarkdown || item.content || ' '"
-            />
-            <details v-if="item.meta" class="answer-meta">
-              <summary>回答依据</summary>
-              <div v-if="item.meta.sources?.length" class="meta-block">
-                <b>引用资料</b>
-                <ul>
-                  <li v-for="(source, sourceIndex) in item.meta.sources.slice(0, 5)" :key="sourceIndex">
-                    {{ source.title || source.name || source.source || source.url || '未命名来源' }}
-                  </li>
-                </ul>
-              </div>
-              <p v-if="item.meta.model"><b>使用模型</b>：{{ item.meta.model }}</p>
-              <p v-if="item.meta.duration || item.meta.totalMs"><b>响应耗时</b>：{{ item.meta.duration || `${item.meta.totalMs} ms` }}</p>
-              <p v-if="item.meta.metrics"><b>简要依据</b>：{{ summarizeMetrics(item.meta.metrics) }}</p>
-            </details>
+          <span class="message-avatar" aria-hidden="true">{{ item.role === 'user' ? '你' : 'AI' }}</span>
+          <div class="message-content">
+            <strong>{{ item.role === 'user' ? '你的提问' : '蓝碳 AI' }}</strong>
+            <p v-if="item.role === 'user'">{{ item.content }}</p>
+            <div v-else class="markdown-body">
+              <MdPreview
+                :editorId="`carbon-ai-preview-${index}`"
+                previewTheme="vuepress"
+                :codeFoldable="false"
+                :modelValue="item.rawMarkdown || item.content || ' '"
+              />
+              <details v-if="item.meta" class="answer-meta">
+                <summary>回答依据</summary>
+                <div v-if="item.meta.sources?.length" class="meta-block">
+                  <b>引用资料</b>
+                  <ul>
+                    <li v-for="(source, sourceIndex) in item.meta.sources.slice(0, 5)" :key="sourceIndex">
+                      <a v-if="source.url && /^https:\/\//.test(source.url)" :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.title || source.name || source.recordId || source.url }}</a>
+                      <span v-else>{{ source.title || source.name || source.recordId || '未命名来源' }}</span>
+                      <small v-if="source.recordId">（{{ source.recordId }}）</small>
+                    </li>
+                  </ul>
+                </div>
+                <p v-else>当前回答未附可核验来源，请勿据此作碳核算或政策判断。</p>
+                <p v-if="item.meta.model"><b>使用模型</b>：{{ item.meta.model }}</p>
+                <p v-if="item.meta.duration || item.meta.totalMs"><b>响应耗时</b>：{{ item.meta.duration || `${item.meta.totalMs} ms` }}</p>
+                <p v-if="item.meta.metrics"><b>简要依据</b>：{{ summarizeMetrics(item.meta.metrics) }}</p>
+              </details>
+            </div>
           </div>
         </article>
       </div>
@@ -81,8 +87,12 @@ import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { MdPreview } from 'md-editor-v3';
 import 'md-editor-v3/lib/style.css';
 import { parseAiStreamPayload } from '@/utils/aiStreamParser';
+import { answerPublicFact, isPublicFactQuery } from '@/utils/publicFactAnswer.mjs';
+import { apiUrl, publicUrl } from '@/utils/urls';
 
-const STREAM_URL = '/api/chat/stream-carbon';
+const STREAM_URL = apiUrl('/api/chat/stream-carbon');
+const STATUS_URL = apiUrl('/api/chat/knowledge-status');
+const HISTORY_URL = apiUrl('/api/chat/history');
 const FLUSH_INTERVAL = 40;
 const isOpen = ref(false);
 const justClosed = ref(false);
@@ -96,6 +106,7 @@ let flushTimer = null;
 let scrollFrame = null;
 let activeAssistantIndex = -1;
 let shouldAutoScroll = true;
+let historyLoaded = false;
 
 const prompts = ['什么是蓝碳', '解释碳储估算', '海南红树林证据', '模型输入变量'];
 const welcomeMessage = '你好，我是 蓝碳 AI 碳助手。可以询问蓝碳概念、碳储估算、数据来源、模型解释和平台使用问题。';
@@ -104,7 +115,51 @@ const messages = ref([{ role: 'assistant', content: welcomeMessage, rawMarkdown:
 function openPanel() {
   isOpen.value = true;
   justClosed.value = false;
+  loadKnowledgeStatus();
+  loadHistory();
   nextTick(scheduleScroll);
+}
+
+function authHeaders(extra = {}) {
+  const token = localStorage.getItem('token');
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
+}
+
+async function loadHistory() {
+  if (historyLoaded || loading.value) return;
+  historyLoaded = true;
+  try {
+    const response = await fetch(`${HISTORY_URL}?sessionId=${encodeURIComponent(getSessionId())}`, {
+      headers: authHeaders({ Accept: 'application/json' }),
+    });
+    if (!response.ok) return;
+    const payload = await response.json();
+    if (Array.isArray(payload.messages) && payload.messages.length) {
+      messages.value = payload.messages.map((item) => ({
+        role: item.role === 'user' ? 'user' : 'assistant',
+        content: item.content || '',
+        rawMarkdown: item.content || '',
+        streaming: false,
+        meta: item.role === 'assistant' ? { evidenceStatus: item.evidenceStatus, sources: [] } : null,
+      }));
+    }
+  } catch {
+    // History is a convenience; the assistant remains available when it cannot be restored.
+  }
+}
+
+async function loadKnowledgeStatus() {
+  if (loading.value) return;
+  try {
+    const response = await fetch(STATUS_URL, { headers: { Accept: 'application/json' } });
+    if (!response.ok) throw new Error('status unavailable');
+    const status = await response.json();
+    serviceState.value = status.configured
+      ? 'HNBLUE 本地知识库已连接'
+      : '本地知识库暂时不可用；公开记录问答可用';
+  } catch {
+    serviceState.value = '知识库状态暂时无法读取；公开记录问答可用';
+  }
 }
 
 function closePanel() {
@@ -115,13 +170,21 @@ function closePanel() {
   window.setTimeout(() => { justClosed.value = false; }, 520);
 }
 
-function clearMessages() {
+async function clearMessages() {
   closeEventSource();
   clearFlushTimers(true);
   messages.value = [{ role: 'assistant', content: welcomeMessage, rawMarkdown: welcomeMessage, streaming: false, meta: null }];
   serviceState.value = '';
   loading.value = false;
   shouldAutoScroll = true;
+  try {
+    await fetch(`${HISTORY_URL}?sessionId=${encodeURIComponent(getSessionId())}`, {
+      method: 'DELETE',
+      headers: authHeaders({ Accept: 'application/json' }),
+    });
+  } catch {
+    serviceState.value = '本地界面已清空；服务器历史暂时未能清除';
+  }
 }
 
 function ask(prompt) {
@@ -139,7 +202,7 @@ function getSessionId() {
   return value;
 }
 
-function sendMessage() {
+async function sendMessage() {
   const text = draft.value.trim();
   if (!text || loading.value) return;
 
@@ -152,34 +215,63 @@ function sendMessage() {
   draft.value = '';
   shouldAutoScroll = true;
 
-  const url = `${STREAM_URL}?message=${encodeURIComponent(text)}&sessionId=${encodeURIComponent(getSessionId())}`;
-  eventSource = new EventSource(url);
+  if (isPublicFactQuery(text)) {
+    const requestIndex = activeAssistantIndex;
+    try {
+      serviceState.value = '正在核对公开记录';
+      const response = await fetch(publicUrl('/data/demo/frontend_literature_carbon_cards.json'));
+      if (!response.ok) throw new Error('公开记录暂时不可读取');
+      const data = await response.json();
+      const fact = answerPublicFact(text, data.cards || []);
+      const current = messages.value[requestIndex];
+      if (!current?.streaming) return;
+      current.rawMarkdown = fact.answer;
+      current.content = fact.answer;
+      current.meta = { sources: fact.sources, route: fact.route, evidenceStatus: fact.evidenceStatus };
+      finishResponse();
+    } catch (error) {
+      if (messages.value[requestIndex]?.streaming) showError(error.message || '公开记录暂时不可读取');
+    }
+    return;
+  }
 
-  eventSource.onopen = () => {
+  const controller = new AbortController();
+  eventSource = { close: () => controller.abort() };
+  try {
+    const response = await fetch(STREAM_URL, {
+      method: 'POST',
+      headers: authHeaders({ 'Content-Type': 'application/json', Accept: 'text/event-stream' }),
+      body: JSON.stringify({ message: text, sessionId: getSessionId() }),
+      signal: controller.signal,
+    });
+    if (!response.ok || !response.body) throw new Error('AI 服务连接失败，请稍后重试。');
     serviceState.value = '正在分析问题并检索知识资料';
-  };
-
-  eventSource.onmessage = (event) => {
-    const payload = parseAiStreamPayload(event.data);
-    if (!payload) return;
-    if (payload.error) {
-      showError(payload.error);
-      return;
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split(/\r?\n\r?\n/);
+      buffer = events.pop() || '';
+      for (const block of events) {
+        const data = block.split(/\r?\n/).filter((line) => line.startsWith('data:'))
+          .map((line) => line.slice(5).trim()).join('\n');
+        if (!data) continue;
+        const payload = parseAiStreamPayload(data);
+        if (!payload) continue;
+        if (payload.error) throw new Error(payload.error);
+        if (payload.status) serviceState.value = statusLabel(payload.status);
+        if (payload.meta) setMeta(payload.meta);
+        if (payload.delta) { appendDelta(payload.delta); serviceState.value = '正在生成回答'; }
+        if (payload.done) finishResponse(payload.meta || {});
+      }
     }
-    if (payload.status) serviceState.value = statusLabel(payload.status);
-    if (payload.meta) setMeta(payload.meta);
-    if (payload.delta) {
-      appendDelta(payload.delta);
-      serviceState.value = '正在生成回答';
-    }
-    if (payload.done) finishResponse(payload.meta || {});
-  };
-
-  eventSource.onerror = () => {
-    if (!loading.value) return;
-    showError('AI 服务连接失败，请稍后重试。');
-  };
-
+    if (loading.value) finishResponse();
+  } catch (error) {
+    if (error?.name !== 'AbortError' && loading.value) showError(error.message || 'AI 服务连接失败，请稍后重试。');
+  }
   scheduleScroll();
 }
 
@@ -214,6 +306,8 @@ function setMeta(meta) {
 
 function finishResponse(payload = {}) {
   flushPendingDelta();
+  const current = messages.value[activeAssistantIndex];
+  if (current?.role === 'assistant' && !current.meta) current.meta = { sources: [] };
   closeEventSource();
   markAssistantDone();
   loading.value = false;
@@ -278,6 +372,7 @@ function scheduleScroll() {
 function statusLabel(status) {
   if (status === 'thinking') return '正在分析问题并检索知识资料';
   if (status === 'generating') return '正在生成回答';
+  if (status === 'unavailable') return '项目知识库暂时不可用';
   return '正在连接 AI 碳助手';
 }
 
@@ -436,29 +531,71 @@ onBeforeUnmount(() => {
 .message-panel {
   max-height: min(54vh, 520px);
   overflow: auto;
-  padding: 14px;
+  padding: 18px 16px;
   background: var(--hn-bg-soft);
 }
 
 .message {
-  max-width: 92%;
-  margin-bottom: 12px;
-  padding: 11px 12px;
-  border: 1px solid var(--hn-border);
-  border-radius: 8px;
-  background: var(--hn-card);
+  max-width: 94%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 18px;
 }
 
 .message.user {
   margin-left: auto;
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hn-border-strong);
+  border-radius: 50%;
+  background: var(--hn-surface);
+  color: var(--hn-accent);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.message.user .message-avatar {
+  border-color: color-mix(in srgb, var(--hn-accent) 62%, transparent);
   background: var(--hn-accent);
-  color: #fff;
+  color: var(--hn-on-accent);
+}
+
+.message-content {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--hn-border);
+  border-radius: 5px 16px 16px 16px;
+  background: var(--hn-card);
+  box-shadow: 0 8px 24px rgba(6, 45, 38, 0.06);
+}
+
+.message.user .message-content {
+  border-color: color-mix(in srgb, var(--hn-accent) 74%, var(--hn-border));
+  border-radius: 16px 5px 16px 16px;
+  background: var(--hn-accent);
+  color: var(--hn-on-accent);
 }
 
 .message strong {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
+  color: var(--hn-accent);
   font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.message.user strong {
+  color: var(--hn-on-accent);
+  opacity: 0.82;
 }
 
 .message p {
@@ -467,11 +604,18 @@ onBeforeUnmount(() => {
   line-height: 1.6;
 }
 
+.markdown-body :deep(.md-editor),
 .markdown-body :deep(.md-editor-preview-wrapper),
 .markdown-body :deep(.md-editor-preview) {
   padding: 0;
-  background: transparent;
+  background: transparent !important;
   color: var(--hn-text);
+  --md-bk-color: transparent;
+  --md-color: var(--hn-text);
+}
+
+.markdown-body :deep(.md-editor-preview-wrapper) {
+  overflow: visible;
 }
 
 .markdown-body :deep(.md-editor-preview p),
@@ -555,7 +699,7 @@ onBeforeUnmount(() => {
 .send-row button {
   min-height: 40px;
   background: var(--hn-accent);
-  color: #08201c;
+  color: var(--hn-on-accent);
 }
 
 .send-row button:disabled {
@@ -606,6 +750,57 @@ onBeforeUnmount(() => {
   .ai-fab:focus-visible,
   .carbon-ai.justClosed .ai-fab {
     width: 134px;
+  }
+}
+/* 助手细节：使用与悬浮入口一致的叶片符号，并让对话区更有呼吸感。 */
+.message-panel {
+  min-height: 250px;
+  max-height: min(42vh, 380px);
+  padding: 18px 16px 24px;
+}
+
+.message.assistant .message-avatar {
+  display: grid;
+  place-items: center;
+  color: transparent;
+  font-size: 0;
+}
+
+.message.assistant .message-avatar::before {
+  width: 24px;
+  height: 24px;
+  content: '';
+  background: var(--hn-accent);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20.8 3.2C13.1 3.5 6.5 6.5 4.1 12.3c-1.8 4.3.3 7.5 3.8 8.3 4.4 1 8.8-2.2 10.8-6.3 1.8-3.8 1.6-7.6 2.1-11.1ZM5.2 20.8c3-4.6 6.6-7.7 11.7-10.2' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20.8 3.2C13.1 3.5 6.5 6.5 4.1 12.3c-1.8 4.3.3 7.5 3.8 8.3 4.4 1 8.8-2.2 10.8-6.3 1.8-3.8 1.6-7.6 2.1-11.1ZM5.2 20.8c3-4.6 6.6-7.7 11.7-10.2' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.message.assistant .message-content > strong:first-child {
+  display: none;
+}
+
+.send-row textarea {
+  min-height: 76px;
+  resize: none;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--hn-panel) 94%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 64%, transparent);
+}
+
+.send-row textarea:focus,
+.send-row textarea:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--hn-accent) 46%, transparent);
+  outline-offset: 1px;
+  border-color: color-mix(in srgb, var(--hn-accent) 64%, var(--hn-border));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--hn-accent) 10%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 64%, transparent);
+}
+
+@media (max-width: 640px) {
+  .message-panel {
+    min-height: 220px;
+    max-height: 38vh;
   }
 }
 </style>

@@ -71,6 +71,8 @@
       :error="ai.error"
       :is-loading="ai.loading"
       :status="ai.status"
+      :provider-label="ai.providerLabel"
+      :source-count="ai.sourceCount"
       :disabled="!result"
       @generate="generateAiExplanation"
     />
@@ -83,7 +85,7 @@
           <tbody>
             <tr v-if="!history.length"><td colspan="5">暂无历史记录</td></tr>
             <tr v-for="item in history" :key="item.time">
-              <td>{{ item.time }}</td><td>{{ item.treeHeight }} m</td><td>{{ item.dbh }} cm</td><td>{{ item.canopy }} m</td><td>{{ item.prediction }} t/ha</td>
+              <td>{{ item.time }}</td><td>{{ item.treeHeight }} m</td><td>{{ item.dbh }} cm</td><td>{{ item.canopy }} m</td><td>{{ item.prediction }}（m.so）</td>
             </tr>
           </tbody>
         </table>
@@ -100,6 +102,7 @@ import ModelResultPanel from '@/components/model/ModelResultPanel.vue';
 import AiAnalysisPanel from '@/components/model/AiAnalysisPanel.vue';
 import { checkModelHealth, predictCarbon } from '@/services/modelService';
 import { parseAiStreamPayload, stripThinkBlocks } from '@/utils/aiStreamParser';
+import { apiUrl } from '@/utils/urls';
 
 const HISTORY_KEY = 'hnblue_structure_prediction_history';
 const defaults = {
@@ -122,8 +125,8 @@ const result = ref(null);
 const history = ref([]);
 const isPredicting = ref(false);
 const formError = ref('');
-const ai = reactive({ loading: false, content: '', error: '', status: '' });
-let aiEventSource = null;
+const ai = reactive({ loading: false, content: '', error: '', status: '', providerLabel: '', sourceCount: 0 });
+let aiAbortController = null;
 
 const coreFields = [
   { key: 'treeHeight', label: '平均树高', unit: 'm', min: 0.1, max: 80, step: 0.1, help: '描述林分垂直结构' },
@@ -224,13 +227,12 @@ function exportHistory() {
 
 function downloadCsv(filename, rows) {
   const csv = rows.map((row) => row.map((value) => `"${String(value ?? '').replaceAll('"', '""')}"`).join(',')).join('\n');
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  link.href = url;
+  link.href = `data:text/csv;charset=utf-8,%EF%BB%BF${encodeURIComponent(csv)}`;
   link.download = filename;
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
 }
 
 async function generateAiExplanation() {
@@ -239,10 +241,15 @@ async function generateAiExplanation() {
   ai.content = '';
   ai.error = '';
   ai.status = '正在连接智能解释服务';
+  ai.providerLabel = '';
+  ai.sourceCount = 0;
   const input = result.value.input;
-  const prompt = `请根据以下结构参数和模型输出，生成简洁、专业的生态学解释。\n\n结构参数：\n平均树高：${input.treeHeight} m\n胸径：${input.dbh} cm\n冠幅：${input.canopy} m\n纬度：${input.latitude}\n经度：${input.longitude}\n年均温：${input.mat} ℃\n年降水量：${input.map} mm\n林龄：${input.age} 年\n木材密度：${input.cd} g/cm³\n植被类型：${input.vegetation}\n生长条件：${input.growingcondition}\n植物功能类型：${input.pft}\n\nCatBoost 模型输出：\n单位面积生物量估算值：${result.value.prediction} t/ha\n\n请说明：1. 生态学含义 2. 主要影响参数 3. 适用范围 4. 需要补充的输入数据 5. 不得将结果表述为正式核证结论`;
+  const prompt = `请根据以下结构参数和模型输出，生成简洁、专业的生态学解释。\n\n结构参数：\n平均树高：${input.treeHeight} m\n胸径：${input.dbh} cm\n冠幅：${input.canopy} m\n纬度：${input.latitude}\n经度：${input.longitude}\n年均温：${input.mat} ℃\n年降水量：${input.map} mm\n林龄：${input.age} 年\n木材密度：${input.cd} g/cm³\n植被类型：${input.vegetation}\n生长条件：${input.growingcondition}\n植物功能类型：${input.pft}\n\nCatBoost 模型输出：\nm.so 地上部生物量目标的原始预测值：${result.value.prediction}（尚未换算为 t/ha 或碳储量）\n\n请说明：1. 生态学含义 2. 主要影响参数 3. 适用范围 4. 需要补充的输入数据 5. 不得将结果表述为正式核证结论`;
   try {
-    await streamAi(prompt, (delta) => { ai.content = stripThinkBlocks(ai.content + delta); });
+    await streamAi(prompt, (delta) => { ai.content = stripThinkBlocks(ai.content + delta); }, (meta) => {
+      ai.providerLabel = meta.model === 'deepseek-chat' ? 'DeepSeek + HNBLUE RAG' : (meta.model ? '知识库证据回退' : '');
+      ai.sourceCount = Array.isArray(meta.sources) ? meta.sources.length : 0;
+    });
   } catch (error) {
     ai.error = error?.message || '智能解释生成失败，请稍后重新生成；模型估算结果已保留。';
   } finally {
@@ -251,44 +258,45 @@ async function generateAiExplanation() {
   }
 }
 
-async function streamAi(prompt, onDelta) {
+async function streamAi(prompt, onDelta, onMeta) {
   closeAiStream();
-  return new Promise((resolve, reject) => {
-    const sessionId = getAiSessionId();
-    const url = `/api/chat/stream-carbon?message=${encodeURIComponent(prompt)}&sessionId=${encodeURIComponent(sessionId)}`;
-    const source = new EventSource(url);
-    aiEventSource = source;
-    let settled = false;
-    let receivedContent = false;
-
-    const finish = (error) => {
-      if (settled) return;
-      settled = true;
-      source.close();
-      if (aiEventSource === source) aiEventSource = null;
-      if (error) reject(error);
-      else if (!receivedContent) reject(new Error('智能解释服务已结束，但没有返回可显示内容，请重新生成。'));
-      else resolve();
-    };
-
-    source.onopen = () => { ai.status = '正在分析结构参数与模型结果'; };
-    source.onmessage = (event) => {
-      const payload = parseAiStreamPayload(event.data);
-      if (!payload) return;
-      if (payload.error) {
-        finish(new Error(payload.error));
-        return;
-      }
+  const sessionId = getAiSessionId();
+  aiAbortController = new AbortController();
+  const token = localStorage.getItem('token');
+  const response = await fetch(apiUrl('/api/chat/stream-carbon'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ message: prompt, sessionId }),
+    signal: aiAbortController.signal,
+  });
+  if (!response.ok || !response.body) throw new Error('智能解释服务连接失败，请稍后重试；模型估算结果已保留。');
+  ai.status = '正在检索证据并调用 DeepSeek';
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  let receivedContent = false;
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() || '';
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('data:')) continue;
+      const payload = parseAiStreamPayload(trimmed.slice(5).trim());
+      if (payload.error) throw new Error(payload.error);
       if (payload.status) ai.status = aiStatusLabel(payload.status);
+      if (payload.meta) onMeta?.(payload.meta);
       if (payload.delta) {
         receivedContent = true;
         onDelta(payload.delta);
-        ai.status = '正在生成结构参数解释';
+        ai.status = 'DeepSeek 正在结合知识库生成解释';
       }
-      if (payload.done) finish();
-    };
-    source.onerror = () => finish(new Error('智能解释连接失败，请稍后重试；模型估算结果已保留。'));
-  });
+    }
+  }
+  aiAbortController = null;
+  if (!receivedContent) throw new Error('智能解释服务已结束，但没有返回可显示内容，请重新生成。');
 }
 
 function getAiSessionId() {
@@ -306,8 +314,8 @@ function aiStatusLabel(status) {
 }
 
 function closeAiStream() {
-  aiEventSource?.close();
-  aiEventSource = null;
+  aiAbortController?.abort();
+  aiAbortController = null;
 }
 
 onBeforeUnmount(closeAiStream);

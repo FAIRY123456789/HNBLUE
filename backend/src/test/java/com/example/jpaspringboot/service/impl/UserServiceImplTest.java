@@ -13,6 +13,7 @@
 package com.example.jpaspringboot.service.impl;
 
 import com.example.jpaspringboot.entity.User;
+import com.example.jpaspringboot.entity.Admin;
 import com.example.jpaspringboot.repository.UserRepository;
 import com.example.jpaspringboot.repository.AdminRepository;
 import com.example.jpaspringboot.repository.AdministratorUserRelationRepository;
@@ -25,6 +26,12 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import com.example.jpaspringboot.util.JwtUtils;
 
 @SpringBootTest
 public class UserServiceImplTest {
@@ -107,6 +114,34 @@ public class UserServiceImplTest {
         assertNotNull(foundUser);
         assertEquals("existingUser", foundUser.getName());
         verify(userRepository, times(1)).findByName("existingUser");
+    }
+
+    @Test
+    public void findUsersManagedByAdmin_PagesIdsWithoutSortAndPreservesRelationOrder() {
+        Admin admin = new Admin(100001, "Admin_100001", "salt", "hash");
+        String token = JwtUtils.generateToken(admin.getName());
+        Pageable controllerPageable = PageRequest.of(2, 20, Sort.by("id").ascending());
+        User first = new User();
+        first.setId(101);
+        User second = new User();
+        second.setId(103);
+        Page<Integer> idPage = new PageImpl<>(List.of(101, 103), PageRequest.of(2, 20), 50_000);
+
+        when(adminRepository.findByName(admin.getName())).thenReturn(admin);
+        when(administratorUserRelationRepository.findUserIdsByAdminId(eq(admin.getId()), any(Pageable.class)))
+                .thenReturn(idPage);
+        when(userRepository.findByIdIn(List.of(101, 103))).thenReturn(List.of(second, first));
+
+        Page<User> actual = userServiceImpl.findUsersManagedByAdmin(token, controllerPageable);
+
+        assertEquals(List.of(first, second), actual.getContent());
+        assertEquals(50_000, actual.getTotalElements());
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(administratorUserRelationRepository)
+                .findUserIdsByAdminId(eq(admin.getId()), pageableCaptor.capture());
+        assertEquals(2, pageableCaptor.getValue().getPageNumber());
+        assertEquals(20, pageableCaptor.getValue().getPageSize());
+        assertTrue(pageableCaptor.getValue().getSort().isUnsorted());
     }
 
     /**

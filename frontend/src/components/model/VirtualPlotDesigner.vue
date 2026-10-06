@@ -94,6 +94,9 @@
       :content="ai.content"
       :error="ai.error"
       :is-loading="ai.loading"
+      :status="ai.status"
+      :provider-label="ai.providerLabel"
+      :source-count="ai.sourceCount"
       button-label="重新分析"
       @generate="generateAiAnalysis"
     />
@@ -108,6 +111,7 @@ import SectionHeader from '@/components/common/SectionHeader.vue';
 import AiAnalysisPanel from '@/components/model/AiAnalysisPanel.vue';
 import { checkModelHealth, predictCarbonBatch } from '@/services/modelService';
 import { parseAiStreamPayload, stripThinkBlocks } from '@/utils/aiStreamParser';
+import { apiUrl } from '@/utils/urls';
 
 const shared = reactive({ latitude: 19.0, longitude: 109.5, mat: 25.5, map: 1800 });
 const scenario = reactive({ name: '基准情景', treeHeight: 0, dbh: 0, canopy: 0 });
@@ -118,7 +122,7 @@ const plotErrors = reactive({});
 const isPredicting = ref(false);
 const error = ref('');
 const chartRef = ref(null);
-const ai = reactive({ loading: false, content: '', error: '' });
+const ai = reactive({ loading: false, content: '', error: '', status: '', providerLabel: '', sourceCount: 0 });
 let nextId = 3;
 
 function createPlot(id, name, treeHeight = 8, dbh = 12, canopy = 4) {
@@ -214,26 +218,34 @@ function exportResults() {
 }
 function downloadCsv(filename, rows) {
   const csv = rows.map((row) => row.map((value) => `"${String(value ?? '').replaceAll('"', '""')}"`).join(',')).join('\n');
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  link.href = url; link.download = filename; link.click(); URL.revokeObjectURL(url);
+  link.href = `data:text/csv;charset=utf-8,%EF%BB%BF${encodeURIComponent(csv)}`; link.download = filename; document.body.appendChild(link); link.click(); link.remove();
 }
 
 async function generateAiAnalysis() {
   if (!results.value.length) return;
-  ai.loading = true; ai.content = ''; ai.error = '';
+  ai.loading = true; ai.content = ''; ai.error = ''; ai.status = '正在检索证据并调用 DeepSeek'; ai.providerLabel = ''; ai.sourceCount = 0;
   const lines = results.value.map((item) => `${item.name}：情景 ${item.scenario}，树高 ${item.treeHeight} m，胸径 ${item.dbh} cm，冠幅 ${item.canopy} m，预测 ${item.prediction} t/ha，相对变化 ${item.change}`).join('\n');
   const prompt = `请根据以下虚拟样地模型结果进行方案对比分析。\n${lines}\n\n请说明：1. 各样地模型结果差异 2. 主要参数变化 3. 可能的结构性原因 4. 哪些结论仅属于情景模拟 5. 哪些数据需要实测验证。不得表述为正式核证结论。`;
-  try { await streamAi(prompt, (delta) => { ai.content = stripThinkBlocks(ai.content + delta); }); }
+  try { await streamAi(prompt, (delta) => { ai.content = stripThinkBlocks(ai.content + delta); }, (meta) => {
+    ai.providerLabel = meta.model === 'deepseek-chat' ? 'DeepSeek + HNBLUE RAG' : (meta.model ? '知识库证据回退' : '');
+    ai.sourceCount = Array.isArray(meta.sources) ? meta.sources.length : 0;
+  }); }
   catch { ai.error = '模型估算已完成，智能解释服务当前不可用'; }
-  finally { ai.loading = false; }
+  finally { ai.loading = false; ai.status = ''; }
 }
-async function streamAi(prompt, onDelta) {
-  const response = await fetch('/api/chat/stream-carbon', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: prompt }) });
+async function streamAi(prompt, onDelta, onMeta) {
+  const token = localStorage.getItem('token');
+  const response = await fetch(apiUrl('/api/chat/stream-carbon'), { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ message: prompt, sessionId: getAiSessionId() }) });
   if (!response.ok || !response.body) throw new Error('AI 服务不可用');
   const reader = response.body.getReader(); const decoder = new TextDecoder('utf-8'); let buffer = '';
-  while (true) { const { value, done } = await reader.read(); if (done) break; buffer += decoder.decode(value, { stream: true }); const parts = buffer.split('\n'); buffer = parts.pop() || ''; for (const line of parts) { const trimmed = line.trim(); if (!trimmed.startsWith('data:')) continue; const parsed = parseAiStreamPayload(trimmed.slice(5).trim()); if (parsed.error) throw new Error(parsed.error); if (parsed.delta) onDelta(parsed.delta); } }
+  while (true) { const { value, done } = await reader.read(); if (done) break; buffer += decoder.decode(value, { stream: true }); const parts = buffer.split(/\r?\n/); buffer = parts.pop() || ''; for (const line of parts) { const trimmed = line.trim(); if (!trimmed.startsWith('data:')) continue; const parsed = parseAiStreamPayload(trimmed.slice(5).trim()); if (parsed.error) throw new Error(parsed.error); if (parsed.status) ai.status = '正在分析模型结果'; if (parsed.meta) onMeta?.(parsed.meta); if (parsed.delta) { onDelta(parsed.delta); ai.status = 'DeepSeek 正在结合知识库生成解释'; } } }
+}
+function getAiSessionId() {
+  const key = 'hnblue_ai_session_id';
+  let value = sessionStorage.getItem(key);
+  if (!value) { value = crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`; sessionStorage.setItem(key, value); }
+  return value;
 }
 
 onMounted(loadHealth);

@@ -109,4 +109,28 @@ public class LoginControllerTest {
                 .andExpect(status().isUnauthorized())  // 验证HTTP 401未授权状态码
                 .andExpect(jsonPath("$.message").exists());  // 验证失败消息
     }
+
+    @Test
+    public void testPerformanceAccount_IsBlockedByDefault() throws Exception {
+        String username = "perf_user_" + String.valueOf(System.currentTimeMillis()).substring(7);
+        var registerBody = Map.of(
+                "username", username,
+                "password", "test12345",
+                "email", username + "@example.com",
+                "birthdate", "2000-01-01"
+        );
+
+        mockMvc.perform(post("/api/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerBody)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "username", username,
+                                "password", "test12345"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("用户名或密码错误"));
+    }
 }

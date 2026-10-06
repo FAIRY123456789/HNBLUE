@@ -454,7 +454,7 @@ def write_report() -> None:
             "- 未导入 proxy 事实数据。",
             "- 未导入 satellite 或 intl 事实表。",
             "- 未导入文献区域均值到样方、样木或土壤样品表。",
-            "- 未修改前端、后端、Flask、Redis、AnythingLLM。",
+            "- 未修改前端、后端、Flask、Redis 或其他外部知识服务。",
         ]
     )
     REPORT_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")

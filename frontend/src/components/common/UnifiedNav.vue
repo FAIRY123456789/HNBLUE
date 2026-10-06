@@ -7,7 +7,25 @@
         <router-link v-if="isAuthenticated" class="account-inline" :to="accountPath">{{ accountLabel }}</router-link>
       </nav>
       <div class="nav-tools nav-actions">
-        <button v-if="showTheme" class="nav-theme" type="button" @click="toggleTheme">{{ theme === 'dark' ? '深色' : '浅色' }}</button>
+        <div v-if="showTheme" ref="themePicker" class="theme-picker">
+          <button
+            class="nav-theme"
+            type="button"
+            aria-haspopup="menu"
+            :aria-expanded="themeMenuOpen"
+            @click.stop="themeMenuOpen = !themeMenuOpen"
+          >
+            主题 <span class="theme-caret" :class="{ open: themeMenuOpen }" aria-hidden="true">▾</span>
+          </button>
+          <div v-if="themeMenuOpen" class="theme-menu" role="menu" aria-label="选择页面主题">
+            <button type="button" role="menuitemradio" :aria-checked="theme === 'light'" @click="setTheme('light')">
+              <span>浅色主题</span><b v-if="theme === 'light'">✓</b>
+            </button>
+            <button type="button" role="menuitemradio" :aria-checked="theme === 'dark'" @click="setTheme('dark')">
+              <span>深色主题</span><b v-if="theme === 'dark'">✓</b>
+            </button>
+          </div>
+        </div>
         <router-link v-if="!isAuthenticated" class="login-link" to="/login">登录</router-link>
         <template v-else>
           <router-link class="login-link account-link" :to="accountPath">{{ accountLabel }}</router-link>
@@ -19,7 +37,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '@/composables/useAuth';
 
@@ -32,6 +50,8 @@ const router = useRouter();
 const auth = useAuth();
 const THEME_KEY = 'hnblue_site_theme';
 const theme = ref(localStorage.getItem(THEME_KEY) || 'light');
+const themeMenuOpen = ref(false);
+const themePicker = ref(null);
 const items = [
   { label: '首页', to: '/' },
   { label: '碳溯', to: '/carbonseek' },
@@ -52,8 +72,13 @@ function applyTheme(value) {
   localStorage.setItem(THEME_KEY, normalized);
 }
 
-function toggleTheme() {
-  theme.value = theme.value === 'dark' ? 'light' : 'dark';
+function setTheme(value) {
+  theme.value = value === 'dark' ? 'dark' : 'light';
+  themeMenuOpen.value = false;
+}
+
+function closeThemeMenu(event) {
+  if (!themePicker.value?.contains(event.target)) themeMenuOpen.value = false;
 }
 
 function handleLogout() {
@@ -65,7 +90,9 @@ watch(theme, applyTheme);
 onMounted(() => {
   auth.restoreSession();
   applyTheme(theme.value);
+  document.addEventListener('click', closeThemeMenu);
 });
+onBeforeUnmount(() => document.removeEventListener('click', closeThemeMenu));
 </script>
 
 <style scoped>
@@ -144,6 +171,47 @@ onMounted(() => {
   gap: 8px;
 }
 
+.theme-picker {
+  position: relative;
+}
+
+.theme-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+  width: 148px;
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--hn-border);
+  border-radius: 10px;
+  background: var(--hn-panel-solid);
+  box-shadow: var(--hn-shadow);
+}
+
+.theme-menu button {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--hn-text);
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 800;
+}
+
+.theme-menu button:hover,
+.theme-menu button[aria-checked="true"] {
+  background: var(--hn-soft);
+  color: var(--hn-accent);
+}
+
 .nav-theme,
 .login-link {
   border: 1px solid var(--hn-border);
@@ -151,6 +219,22 @@ onMounted(() => {
   cursor: pointer;
   font-family: inherit;
 }
+
+.nav-theme { gap: 4px; }
+
+.theme-caret {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+  transform-origin: center;
+  transition: transform 0.18s ease;
+}
+
+.theme-caret.open { transform: rotate(180deg); }
 
 .logout-button {
   color: var(--hn-danger);

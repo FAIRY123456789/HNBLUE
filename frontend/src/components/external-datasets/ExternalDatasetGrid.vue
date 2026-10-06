@@ -1,13 +1,10 @@
 <template>
   <section class="external-dataset-module">
     <div v-if="loading" class="module-state" aria-live="polite">正在审计外部数据集…</div>
-    <div v-else-if="error" class="module-state error" role="alert">
-      <strong>外部数据集服务暂不可用</strong>
-      <span>{{ error }}</span>
-      <button type="button" @click="load">重新读取</button>
-    </div>
-    <div v-else class="external-grid">
-      <ExternalDatasetCard v-for="dataset in datasets" :key="dataset.datasetId" :dataset="dataset" @open="activeDataset = $event" />
+    <div v-else>
+      <div class="external-grid">
+        <ExternalDatasetCard v-for="dataset in datasets" :key="dataset.datasetId" :dataset="dataset" @open="activeDataset = $event" />
+      </div>
     </div>
     <ExternalDatasetDetailModal :dataset="activeDataset" @close="activeDataset = null" />
   </section>
@@ -18,21 +15,20 @@ import { onMounted, ref } from "vue";
 import ExternalDatasetCard from "@/components/external-datasets/ExternalDatasetCard.vue";
 import ExternalDatasetDetailModal from "@/components/external-datasets/ExternalDatasetDetailModal.vue";
 import { fetchExternalDatasets } from "@/services/externalDatasetService";
+import { EXTERNAL_DATASET_CATALOG } from "@/data/externalDatasetCatalog";
 
 const datasets = ref([]);
 const activeDataset = ref(null);
 const loading = ref(true);
-const error = ref("");
 
 async function load() {
   loading.value = true;
-  error.value = "";
   try {
     const response = await fetchExternalDatasets();
     datasets.value = response.datasets || [];
     if (datasets.value.length !== 4) throw new Error(`接口返回 ${datasets.value.length} 个数据集，预期为 4 个`);
-  } catch (requestError) {
-    error.value = requestError.message || "读取失败";
+  } catch {
+    datasets.value = EXTERNAL_DATASET_CATALOG.map((dataset) => ({ ...dataset, catalogFallback: true }));
   } finally {
     loading.value = false;
   }

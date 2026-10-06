@@ -156,6 +156,7 @@ import hainanGeo from '@/assets/json/hainan.json';
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import axios from 'axios';
+import { apiUrl } from '@/utils/urls';
 
 const props = defineProps({
   name: {
@@ -219,7 +220,7 @@ const economyData = ref([]);
  */
 const fetchRegionData = async () => {
   try {
-    const res = await axios.get(`/api/devisual/${props.name}`);
+    const res = await axios.get(apiUrl(`/api/devisual/${props.name}`));
     const data = res.data;
 
     // 数据绑定到各个响应式变量

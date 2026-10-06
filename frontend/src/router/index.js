@@ -15,6 +15,7 @@ const StructureParameterPage = () => import("@/components/StructureParameterPage
 const VirtualPlotDesignerPage = () => import("@/components/VirtualPlotDesignerPage.vue");
 const UserInfo = () => import("@/components/UserInfo.vue");
 const UserManage = () => import("@/components/UserManage.vue");
+const ProviderKeySetup = () => import("@/components/ProviderKeySetup.vue");
 
 const PlaceholderPage = {
   props: {
@@ -44,6 +45,7 @@ const routes = [
   { path: "/devisual/:name", name: "DeVisualCompat", component: MapExplorePage },
   { path: "/userinfo", name: "UserInfo", component: UserInfo, meta: { requiresAuth: true, roles: ["User", "Admin"] } },
   { path: "/usermanage", name: "UserManage", component: UserManage, meta: { requiresAuth: true, roles: ["Admin"] } },
+  { path: "/internal-provider-setup", name: "ProviderKeySetup", component: ProviderKeySetup },
   { path: "/structure-predictor", name: "StructurePredictor", component: StructureParameterPage },
   { path: "/virtual-plot-designer", name: "VirtualPlotDesigner", component: VirtualPlotDesignerPage },
   { path: "/shap-visualizer", name: "ShapVisualizer", component: PlaceholderPage, props: { title: "模型解释图" } },
@@ -56,7 +58,7 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(process.env.BASE_URL || "/"),
   routes,
   scrollBehavior() {
     return { top: 0 };

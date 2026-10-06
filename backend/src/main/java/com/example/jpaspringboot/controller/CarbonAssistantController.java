@@ -1,6 +1,8 @@
 package com.example.jpaspringboot.controller;
 
-import com.example.jpaspringboot.service.ai.ThinkTagFilter;
+import com.example.jpaspringboot.service.ai.AiConversationService;
+import com.example.jpaspringboot.service.ai.GroundedRagAnswerService;
+import com.example.jpaspringboot.entity.AiChatMessage;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
@@ -9,22 +11,21 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import okhttp3.internal.sse.RealEventSource;
-import okhttp3.sse.EventSource;
-import okhttp3.sse.EventSourceListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,27 +39,129 @@ import java.util.concurrent.atomic.AtomicLong;
 @RequestMapping("${chat.api.path}")
 public class CarbonAssistantController {
     private static final Logger logger = LoggerFactory.getLogger(CarbonAssistantController.class);
-    private static final String DONE = "[DONE]";
-
     private final ObjectMapper objectMapper;
-    private final OkHttpClient client;
+    private final OkHttpClient ragClient;
 
-    @Value("${anythingllm.api.key}")
-    private String apiKey;
+    @Autowired(required = false)
+    private GroundedRagAnswerService groundedRagAnswerService;
 
-    @Value("${anythingllm.api.url}")
-    private String anythingllmUrl;
+    @Autowired(required = false)
+    private AiConversationService aiConversationService;
 
-    @Value("${anythingllm.workspace}")
-    private String workspace;
+    @Value("${rag.local.enabled:true}")
+    private boolean localRagEnabled;
+
+    @Value("${rag.api.url:http://127.0.0.1:8880}")
+    private String ragApiUrl;
 
     public CarbonAssistantController(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-        this.client = new OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(0, TimeUnit.MILLISECONDS)
+        this.ragClient = new OkHttpClient.Builder()
+                .connectTimeout(5, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .callTimeout(35, TimeUnit.SECONDS)
                 .build();
+    }
+
+    @GetMapping("/knowledge-status")
+    public Map<String, Object> knowledgeStatus() {
+        Map<String, Object> localStatus = localRagStatus();
+        if (Boolean.TRUE.equals(localStatus.get("configured"))) {
+            String generation = groundedRagAnswerService == null ? "unavailable" : groundedRagAnswerService.generationMode();
+            localStatus.put("generation", generation);
+            localStatus.put("deepSeekConfigured", "deepseek-grounded".equals(generation));
+            localStatus.put("memoryWindowMessages", 20);
+            localStatus.put("historyStore", "mysql");
+            localStatus.put("memoryPrivacy", "minimal-context-only; full history and secrets are not sent to DeepSeek");
+            return localStatus;
+        }
+        localStatus.put("generation", groundedRagAnswerService == null
+                ? "unavailable" : groundedRagAnswerService.generationMode());
+        localStatus.put("deepSeekConfigured", groundedRagAnswerService != null
+                && "deepseek-grounded".equals(groundedRagAnswerService.generationMode()));
+        localStatus.put("memoryWindowMessages", 20);
+        localStatus.put("historyStore", "mysql");
+        localStatus.put("memoryPrivacy", "minimal-context-only; full history and secrets are not sent to DeepSeek");
+        return localStatus;
+    }
+
+    @PostMapping(value = "/stream-carbon", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter handleGroundedCarbonStream(
+            @org.springframework.web.bind.annotation.RequestBody ChatRequest requestBody,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            HttpServletResponse response
+    ) {
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "no-cache");
+        response.setHeader("X-Accel-Buffering", "no");
+        String message = requestBody == null ? "" : requestBody.message();
+        String safeSessionId = normalizeSessionId(requestBody == null ? null : requestBody.sessionId());
+        SseEmitter emitter = new SseEmitter(100_000L);
+        StreamState state = new StreamState(emitter, safeSessionId);
+        if (message == null || message.isBlank()) {
+            sendErrorAndComplete(state, "请输入要查询的问题。");
+            return emitter;
+        }
+        if (message.length() > 4000) {
+            sendErrorAndComplete(state, "问题内容过长，请控制在 4000 字以内。");
+            return emitter;
+        }
+        if (groundedRagAnswerService == null || aiConversationService == null) {
+            sendErrorAndComplete(state, "HNBLUE 3.0 问答服务暂时不可用。");
+            return emitter;
+        }
+        sendStatusOnce(state, "thinking", "正在检索证据并执行来源约束…");
+        try {
+            AiConversationService.Identity identity = aiConversationService.resolveIdentity(authorization, safeSessionId);
+            List<Map<String, String>> recent = aiConversationService.recentMessages(identity, safeSessionId);
+            String retrievalQuestion = aiConversationService.contextualizeLocally(message, recent);
+            AiChatMessage userRow = aiConversationService.saveMessage(identity, safeSessionId, "user", message,
+                    null, "pending", "", "none");
+            GroundedRagAnswerService.Answer answer = groundedRagAnswerService.answer(message, retrievalQuestion);
+            boolean blocked = "blocked_prompt_injection".equals(answer.evidenceStatus());
+            aiConversationService.maybeRemember(identity, userRow, message, blocked);
+            aiConversationService.saveMessage(identity, safeSessionId, "assistant", answer.text(), answer.sources(),
+                    answer.evidenceStatus(), answer.model(), answer.injectionRisk());
+            for (int offset = 0; offset < answer.text().length(); offset += 220) {
+                sendDelta(state, answer.text().substring(offset, Math.min(answer.text().length(), offset + 220)));
+            }
+            Map<String, Object> meta = new LinkedHashMap<>();
+            meta.put("type", "meta");
+            meta.put("provider", "hnblue-rag-3.0");
+            meta.put("model", answer.model());
+            meta.put("sources", answer.sources());
+            meta.put("metrics", answer.metrics());
+            meta.put("evidenceStatus", answer.evidenceStatus());
+            meta.put("injectionRisk", answer.injectionRisk());
+            meta.put("memoryWindowMessages", 20);
+            meta.put("memoryPrivacy", "minimal-context-only");
+            state.metaSent.set(true);
+            sendQuietly(emitter, sse(meta));
+            finishStream(state);
+        } catch (Exception error) {
+            logger.error("HNBLUE 3.0 问答失败 sessionId={} errorType={} message={}", safeSessionId,
+                    error.getClass().getSimpleName(), error.getMessage());
+            sendErrorAndComplete(state, "证据问答服务暂时不可用，请稍后重试。");
+        }
+        return emitter;
+    }
+
+    @GetMapping("/history")
+    public Map<String, Object> history(@RequestParam String sessionId,
+                                       @RequestHeader(value = "Authorization", required = false) String authorization) {
+        String safe = normalizeSessionId(sessionId);
+        if (aiConversationService == null) return Map.of("messages", List.of());
+        AiConversationService.Identity identity = aiConversationService.resolveIdentity(authorization, safe);
+        return Map.of("sessionId", safe, "messages", aiConversationService.history(identity, safe));
+    }
+
+    @DeleteMapping("/history")
+    public Map<String, Object> clearHistory(@RequestParam String sessionId,
+                                            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        String safe = normalizeSessionId(sessionId);
+        if (aiConversationService == null) return Map.of("deleted", 0);
+        AiConversationService.Identity identity = aiConversationService.resolveIdentity(authorization, safe);
+        return Map.of("deleted", aiConversationService.clear(identity, safe));
     }
 
     @GetMapping(value = "/stream-carbon", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -74,139 +177,98 @@ public class CarbonAssistantController {
         String safeSessionId = normalizeSessionId(sessionId);
         StreamState state = new StreamState(emitter, safeSessionId);
 
-        logger.info("AI请求开始 sessionId={} messageLength={}", safeSessionId, message == null ? 0 : message.length());
-        sendQuietly(emitter, sse(Map.of("type", "status", "status", "connecting", "message", "正在连接 AI 碳助手…")));
-
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("message", message);
-        payload.put("mode", "chat");
-        payload.put("sessionId", safeSessionId);
-
-        Request request;
-        try {
-            request = new Request.Builder()
-                    .url(normalizedAnythingLlmUrl() + "/v1/workspace/" + workspace + "/stream-chat")
-                    .addHeader("Authorization", "Bearer " + apiKey)
-                    .addHeader("Content-Type", "application/json")
-                    .addHeader("Accept", "text/event-stream")
-                    .addHeader(HttpHeaders.CACHE_CONTROL, "no-cache")
-                    .addHeader("X-Accel-Buffering", "no")
-                    .post(RequestBody.create(objectMapper.writeValueAsString(payload), MediaType.parse("application/json")))
-                    .build();
-        } catch (Exception e) {
-            sendErrorAndComplete(state, "AI 请求创建失败");
-            logger.error("AI请求创建失败 sessionId={}", safeSessionId, e);
+        if (message == null || message.isBlank()) {
+            sendErrorAndComplete(state, "请输入要查询的问题。");
             return emitter;
         }
-
-        RealEventSource upstream = new RealEventSource(request, new EventSourceListener() {
-            @Override
-            public void onEvent(EventSource eventSource, String id, String type, String data) {
-                handleAnythingLlmEvent(state, data);
-            }
-
-            @Override
-            public void onClosed(EventSource eventSource) {
-                finishStream(state);
-            }
-
-            @Override
-            public void onFailure(EventSource eventSource, Throwable t, Response upstreamResponse) {
-                String status = upstreamResponse == null ? "no-http-response" : String.valueOf(upstreamResponse.code());
-                logger.error("AnythingLLM连接失败 sessionId={} httpStatus={} message={}",
-                        safeSessionId, status, t == null ? "" : t.getMessage());
-                sendErrorAndComplete(state, "AI 服务连接失败，请检查 Spring Boot 与 AnythingLLM。");
-            }
-        });
-
-        state.setUpstream(upstream);
-        emitter.onCompletion(() -> state.cancelUpstream("client-complete"));
-        emitter.onTimeout(() -> {
-            state.cancelUpstream("client-timeout");
-            sendErrorAndComplete(state, "AI 服务响应超时，请稍后重试。");
-        });
-        emitter.onError(error -> state.cancelUpstream("client-error"));
-
-        upstream.connect(client);
+        if (message.length() > 4000) {
+            sendErrorAndComplete(state, "问题内容过长，请控制在 4000 字以内。");
+            return emitter;
+        }
+        if (localRagEnabled) {
+            if (handleLocalRagStream(state, message)) return emitter;
+            logger.warn("本地RAG请求失败 sessionId={}", safeSessionId);
+        }
+        sendErrorAndComplete(state, "本地知识库服务暂时不可用；公开数据与来源查询仍可正常使用。");
         return emitter;
     }
 
-    private void handleAnythingLlmEvent(StreamState state, String data) {
-        if (data == null || data.isBlank() || DONE.equals(data)) return;
-        int current = state.chunkCount.incrementAndGet();
-        int before = data.length();
-
+    private boolean handleLocalRagStream(StreamState state, String message) {
+        sendStatusOnce(state, "thinking", "正在检索 HNBLUE 本地知识库…");
         try {
-            JsonNode node = objectMapper.readTree(data);
-            if (node.path("error").asBoolean(false)) {
-                logger.warn("AI上游错误事件 sessionId={} chunk={} type={}", state.sessionId, current, node.path("type").asText(""));
-                sendErrorAndComplete(state, "AI 服务返回错误，请稍后重试。");
-                return;
+            Map<String, Object> payload = Map.of("message", message, "topK", 5);
+            Request request = new Request.Builder()
+                    .url(normalizedRagUrl() + "/api/rag/answer")
+                    .addHeader("Content-Type", "application/json")
+                    .post(RequestBody.create(objectMapper.writeValueAsString(payload), MediaType.parse("application/json")))
+                    .build();
+            try (Response response = ragClient.newCall(request).execute()) {
+                if (!response.isSuccessful() || response.body() == null) return false;
+                JsonNode body = objectMapper.readTree(response.body().string());
+                if (!body.path("ok").asBoolean(false)) return false;
+                String answer = body.path("answer").asText("");
+                if (answer.isBlank()) return false;
+                for (int offset = 0; offset < answer.length(); offset += 240) {
+                    sendDelta(state, answer.substring(offset, Math.min(answer.length(), offset + 240)));
+                }
+                Map<String, Object> meta = new LinkedHashMap<>();
+                meta.put("type", "meta");
+                meta.put("provider", body.path("provider").asText("hnblue-local-hybrid-rag"));
+                meta.put("sources", objectMapper.convertValue(body.path("sources"), List.class));
+                meta.put("metrics", objectMapper.convertValue(body.path("metrics"), Map.class));
+                meta.put("evidenceStatus", body.path("evidenceStatus").asText("retrieved"));
+                state.metaSent.set(true);
+                sendQuietly(state.emitter, sse(meta));
+                finishStream(state);
+                return true;
             }
+        } catch (Exception error) {
+            logger.error("本地RAG连接失败 sessionId={} errorType={} message={}",
+                    state.sessionId, error.getClass().getSimpleName(), error.getMessage());
+            return false;
+        }
+    }
 
-            String eventType = node.path("type").asText("");
-            switch (eventType) {
-                case "textResponseChunk" -> handleDeltaEvent(state, node.path("textResponse").asText(""));
-                case "textResponse" -> handleTextResponseEvent(state, node.path("textResponse").asText(""));
-                case "finalizeResponseStream" -> handleFinalizeEvent(state, node);
-                case "agentThought", "thought" -> handleThoughtEvent(state);
-                case "abort" -> sendErrorAndComplete(state, "AI 回答已中断。");
-                default -> handleCompatibleEvent(state, node);
+    private Map<String, Object> localRagStatus() {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("provider", "hnblue-local-hybrid-rag");
+        result.put("configured", false);
+        result.put("status", localRagEnabled ? "unavailable" : "disabled");
+        result.put("publicDataFallback", true);
+        if (!localRagEnabled) return result;
+        try {
+            Request request = new Request.Builder()
+                    .url(normalizedRagUrl() + "/api/rag/status")
+                    .addHeader("Accept", "application/json")
+                    .get()
+                    .build();
+            try (Response response = ragClient.newCall(request).execute()) {
+                if (!response.isSuccessful() || response.body() == null) return result;
+                JsonNode body = objectMapper.readTree(response.body().string());
+                if (!body.path("ok").asBoolean(false)) return result;
+                result.put("configured", true);
+                result.put("status", "ready");
+                result.put("chunks", body.path("chunks").asInt(0));
+                result.put("sourceFiles", body.path("sourceFiles").asInt(0));
+                result.put("indexSha256", body.path("indexSha256").asText(""));
+                result.put("retrievalModes", objectMapper.convertValue(body.path("retrievalModes"), List.class));
+                return result;
             }
-            logger.info("AI收到chunk数量={} 类型={} 过滤前长度={} 可见字符累计={}",
-                    current, eventType, before, state.visibleChars.get());
-        } catch (Exception e) {
-            logger.warn("AI事件解析失败 sessionId={} chunk={} length={} message={}",
-                    state.sessionId, current, before, e.getMessage());
-            sendErrorAndComplete(state, "AI 服务返回格式异常。");
+        } catch (Exception error) {
+            logger.warn("本地RAG状态检查失败 errorType={}", error.getClass().getSimpleName());
+            return result;
         }
     }
 
-    private void handleDeltaEvent(StreamState state, String delta) {
-        state.receivedDelta.set(true);
-        String visible = state.thinkFilter.filter(delta);
-        if (state.thinkFilter.isInsideThink() && visible.isEmpty()) {
-            sendStatusOnce(state, "thinking", "正在分析问题并检索知识库…");
-            return;
-        }
-        sendDelta(state, visible);
-    }
-
-    private void handleTextResponseEvent(StreamState state, String text) {
-        if (state.receivedDelta.get()) return;
-        sendDelta(state, state.thinkFilter.filter(text));
-    }
-
-    private void handleFinalizeEvent(StreamState state, JsonNode node) {
-        if (state.metaSent.compareAndSet(false, true)) {
-            Map<String, Object> meta = new LinkedHashMap<>();
-            meta.put("type", "meta");
-            meta.put("sources", summarizeSources(node.path("sources")));
-            Map<String, Object> metrics = compactMetrics(node.path("metrics"));
-            if (!metrics.isEmpty()) meta.put("metrics", metrics);
-            if (metrics.containsKey("model")) meta.put("model", metrics.get("model"));
-            if (metrics.containsKey("duration")) meta.put("duration", metrics.get("duration"));
-            copyIfPresent(meta, node, "model");
-            copyIfPresent(meta, node, "duration");
-            copyIfPresent(meta, node, "chatId");
-            sendQuietly(state.emitter, sse(meta));
-        }
-        finishStream(state);
-    }
-
-    private void handleThoughtEvent(StreamState state) {
-        sendStatusOnce(state, "thinking", "正在分析问题并检索知识库…");
-    }
-
-    private void handleCompatibleEvent(StreamState state, JsonNode node) {
-        String delta = node.path("textResponse").asText("");
-        if (!delta.isBlank() && !node.path("close").asBoolean(false)) {
-            handleDeltaEvent(state, delta);
-        }
+    private String normalizedRagUrl() {
+        String base = ragApiUrl == null ? "" : ragApiUrl.trim();
+        while (base.endsWith("/")) base = base.substring(0, base.length() - 1);
+        return base;
     }
 
     private void sendDelta(StreamState state, String content) {
         if (content == null || content.isEmpty()) return;
+        state.chunkCount.incrementAndGet();
         if (state.firstVisibleAt.compareAndSet(0L, System.currentTimeMillis())) {
             sendQuietly(state.emitter, sse(Map.of("type", "status", "status", "generating", "message", "正在生成回答…")));
         }
@@ -216,8 +278,6 @@ public class CarbonAssistantController {
 
     private void finishStream(StreamState state) {
         if (!state.doneSent.compareAndSet(false, true)) return;
-        String tail = state.thinkFilter.finish();
-        sendDelta(state, tail);
         long totalMs = System.currentTimeMillis() - state.startedAt;
         long firstVisibleMs = state.firstVisibleAt.get() == 0L ? -1L : state.firstVisibleAt.get() - state.startedAt;
         sendQuietly(state.emitter, sse(Map.of(
@@ -235,7 +295,6 @@ public class CarbonAssistantController {
     private void sendErrorAndComplete(StreamState state, String message) {
         if (state.doneSent.get()) return;
         sendQuietly(state.emitter, sse(Map.of("type", "error", "message", message)));
-        state.cancelUpstream("error");
         finishStream(state);
     }
 
@@ -257,52 +316,6 @@ public class CarbonAssistantController {
         return SseEmitter.event().data(payload);
     }
 
-
-    private List<Map<String, Object>> summarizeSources(JsonNode sources) {
-        List<Map<String, Object>> result = new ArrayList<>();
-        if (sources == null || !sources.isArray()) return result;
-        int count = 0;
-        for (JsonNode source : sources) {
-            if (count++ >= 8) break;
-            Map<String, Object> item = new LinkedHashMap<>();
-            putTextIfPresent(item, source, "title");
-            putTextIfPresent(item, source, "url");
-            putTextIfPresent(item, source, "docSource");
-            putTextIfPresent(item, source, "chunkSource");
-            putTextIfPresent(item, source, "published");
-            if (!item.isEmpty()) result.add(item);
-        }
-        return result;
-    }
-
-    private Map<String, Object> compactMetrics(JsonNode metrics) {
-        Map<String, Object> compact = new LinkedHashMap<>();
-        if (metrics == null || !metrics.isObject()) return compact;
-        for (String key : List.of("model", "provider", "duration", "prompt_tokens", "completion_tokens", "total_tokens", "outputTps")) {
-            copyIfPresent(compact, metrics, key);
-        }
-        return compact;
-    }
-
-    private void putTextIfPresent(Map<String, Object> target, JsonNode node, String key) {
-        if (node.has(key) && !node.get(key).isNull()) {
-            String value = node.get(key).asText("");
-            if (!value.isBlank()) target.put(key, value);
-        }
-    }
-    private void copyIfPresent(Map<String, Object> meta, JsonNode node, String key) {
-        if (node.has(key) && !node.get(key).isNull()) {
-            meta.put(key, objectMapper.convertValue(node.get(key), Object.class));
-        }
-    }
-
-    private String normalizedAnythingLlmUrl() {
-        String base = anythingllmUrl == null ? "" : anythingllmUrl.trim();
-        while (base.endsWith("/")) base = base.substring(0, base.length() - 1);
-        if (base.endsWith("/api")) return base;
-        return base + "/api";
-    }
-
     private String normalizeSessionId(String sessionId) {
         if (sessionId == null || sessionId.isBlank()) return UUID.randomUUID().toString();
         String safe = sessionId.replaceAll("[^a-zA-Z0-9_-]", "");
@@ -313,32 +326,19 @@ public class CarbonAssistantController {
     private static class StreamState {
         private final SseEmitter emitter;
         private final String sessionId;
-        private final ThinkTagFilter thinkFilter = new ThinkTagFilter();
         private final AtomicInteger chunkCount = new AtomicInteger();
         private final AtomicLong visibleChars = new AtomicLong();
         private final AtomicLong firstVisibleAt = new AtomicLong();
         private final long startedAt = System.currentTimeMillis();
-        private final AtomicBoolean receivedDelta = new AtomicBoolean(false);
         private final AtomicBoolean doneSent = new AtomicBoolean(false);
         private final AtomicBoolean metaSent = new AtomicBoolean(false);
-        private volatile EventSource upstream;
         private volatile String lastStatus = "";
 
         private StreamState(SseEmitter emitter, String sessionId) {
             this.emitter = emitter;
             this.sessionId = sessionId;
         }
-
-        private void setUpstream(EventSource upstream) {
-            this.upstream = upstream;
-        }
-
-        private void cancelUpstream(String reason) {
-            EventSource source = upstream;
-            if (source != null) {
-                logger.debug("关闭上游AI连接 sessionId={} reason={}", sessionId, reason);
-                source.cancel();
-            }
-        }
     }
+
+    public record ChatRequest(String message, String sessionId) {}
 }

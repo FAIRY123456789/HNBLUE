@@ -62,6 +62,10 @@ data/**
 # Model training data and generated load-test traces stay local.
 flask_model/BAAD_raw.csv
 flask_model/carbon_model_api/results.csv
+flask_model/carbon_model_api/catboost_pipeline.pkl
+flask_model/carbon_model_api/results_per_min.csv
+flask_model/carbon_model_api/results_summary.txt
+flask_model/catboost_info/
 reports/sse-curl-*.txt
 
 # Internal interview and software-copyright working materials are not part of
@@ -73,3 +77,47 @@ docs/*软著*.docx
 redis_data/
 anythingllm_storage/
 mysql_data/
+
+# Public repository boundary: deployment bundles, local evidence, private
+# knowledge, load-test traces, generated reports, and operator workspaces stay
+# outside Git. Only source code and explicitly synthetic examples are released.
+release/
+deliverables/
+deploy/
+tmp/
+output/
+portfolio/
+performance/
+benchmark/
+tools/
+
+rag/source/
+rag/artifacts/
+rag/benchmark_cases.json
+rag/blind_benchmark_cases*.json
+rag/BUILD_AND_EVALUATION_REPORT*.md
+
+docs/API_KEY_ADMIN_CONFIGURATION.md
+docs/BUG_*_2026-*.md
+docs/HNBLUE_RAG_3_0_IMPLEMENTATION_SPEC.md
+docs/LOAD_TEST_ACCOUNT_PLAN.md
+docs/PERFORMANCE_*_2026-*.md
+docs/context/
+docs/v2/
+docs/data_collection/
+docs/archive/
+docs/thesis_summary.md
+docs/TEST_REPORT.md
+docs/redis_rate_limit_test.md
+reports/
+figures/
+
+frontend/public/data/hnblue_v2_public/
+frontend/public/assets/uav/
+frontend/public/data/uav/
+sql/seed/*.sql
+!sql/seed/hnblue_public_demo.sql
+
+# Accidental browser-console paste artifacts.
+i.getAttribute*
+x.textContent*

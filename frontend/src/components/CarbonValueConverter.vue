@@ -60,12 +60,13 @@ function computeValue() {
 
 function exportCsv() {
   const rows = [['carbon_tC_ha', 'price_cny_tC', 'value_cny_ha'], ...history.value.map((item) => [item.carbon, item.price, item.value])];
-  const blob = new Blob(['\uFEFF' + rows.map((row) => row.join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
+  const csv = rows.map((row) => row.join(',')).join('\n');
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
+  link.href = `data:text/csv;charset=utf-8,%EF%BB%BF${encodeURIComponent(csv)}`;
   link.download = 'carbon_value_history.csv';
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(link.href);
+  link.remove();
 }
 </script>
 

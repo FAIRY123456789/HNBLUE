@@ -64,7 +64,7 @@ function go(page) {
 .pagination-bar button:hover:not(:disabled) {
   border-color: var(--hn-accent);
   background: var(--hn-accent);
-  color: #08201c;
+  color: var(--hn-on-accent);
 }
 
 .pagination-bar button:disabled {

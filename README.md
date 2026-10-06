@@ -4,7 +4,7 @@ English · [简体中文](README.zh-CN.md)
 
 HNBLUE is a full-stack research and management prototype for blue-carbon data governance, regional visualization, biomass-model inference, governance workflows, and knowledge-assisted analysis in Hainan, China.
 
-The project integrates a Vue 3 client, a Spring Boot application layer, MySQL, standalone Redis, a Flask/CatBoost inference service, and an optional AnythingLLM + DeepSeek knowledge assistant. The browser talks to Spring Boot only; Spring Boot owns business rules and proxies model and AI services so internal endpoints and credentials are not exposed to the client.
+The project integrates a Vue 3 client, a Spring Boot application and agent-orchestration layer, MySQL, Redis, a Flask/CatBoost inference service, and an HNBLUE-owned hybrid RAG service. DeepSeek is optional and is used only after retrieval and evidence checks; the system still returns extractive evidence when generation is unavailable.
 
 > **Scope:** HNBLUE is a research, teaching, and decision-support system. It is not an official carbon-accounting, carbon-credit verification, or production monitoring platform. Model output, literature summaries, remote-sensing proxies, and AI responses require domain review before scientific or operational use.
 
@@ -16,24 +16,39 @@ The project integrates a Vue 3 client, a Spring Boot application layer, MySQL, s
 - Browsing APIs for BAAD, Tallo, ChinAllomeTree, and GWM-style external data packages.
 - Spring Boot proxy for single and batch CatBoost inference.
 - Virtual-plot scenarios, carbon-value conversion, and offline model interpretation artifacts.
-- AnythingLLM workspace retrieval with DeepSeek generation and Server-Sent Events (SSE) streaming.
+- Agentic RAG with BM25, character TF-IDF, LSA, title retrieval, weighted RRF fusion, evidence gates, prompt-injection checks, citation validation, memory isolation, and SSE delivery.
 - Redis-backed query caching, login rate limiting, password-reset state, and role-aware work-order transitions.
+
+## Why this project is interesting
+
+HNBLUE is less about a polished landing page and more about engineering decisions that survive real constraints:
+
+- **Agent engineering:** retrieval-before-generation, deterministic safety gates, bounded context, auditable citations, graceful extractive fallback, and user-scoped conversation memory.
+- **Backend engineering:** one browser-facing trust boundary, explicit service proxies, encrypted administrator-managed provider keys, cache namespaces, rate limiting, and role-aware workflows.
+- **Product thinking:** distinguish observation, literature, proxy, model estimate, and simulation; show evidence state before confidence; keep unavailable capabilities visible instead of fabricating completeness.
+- **Public-release discipline:** source and architecture are publishable, while private knowledge, licensed datasets, raw imagery, deployment bundles, conversations, credentials, and operational traces stay outside Git.
 
 ## Architecture
 
+The core agent path is intentionally vertical so every trust transition is explicit:
+
 ```mermaid
-flowchart LR
-    U[Browser] --> V[Vue 3]
-    V -->|REST / SSE| B[Spring Boot :8088]
-    B --> M[(MySQL)]
-    B --> R[(Redis standalone)]
-    B -->|model proxy| F[Flask :8880]
-    F --> C[CatBoost pipeline]
-    B -->|stream-chat proxy| A[AnythingLLM :3001]
-    A --> K[Private knowledge workspace]
-    A --> D[DeepSeek or configured LLM]
-    V --> S[Versioned static JSON / GeoJSON / figures]
-    B --> E[Local full data or synthetic examples]
+flowchart TB
+    A[Vue 3 client]
+    B[Spring Boot API and Agent Orchestrator]
+    C[Identity, session, input and policy checks]
+    D[HNBLUE Hybrid Retriever]
+    E[Evidence sufficiency and conflict gate]
+    F[Optional grounded DeepSeek generation]
+    G[Citation validator and extractive fallback]
+    H[SSE answer with sources and evidence state]
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H
 ```
 
 | Layer | Technology | Responsibility |
@@ -43,7 +58,7 @@ flowchart LR
 | Persistence | MySQL 8 | Users, governance records, sources, regions, indicators, and structured facts |
 | Cache/state | Redis | Query cache, login counters, temporary bans, and password-reset state |
 | Model | Python, Flask, CatBoost, scikit-learn | Pipeline loading, single/batch inference, and analysis endpoints |
-| Knowledge assistant | AnythingLLM, DeepSeek, RAG, SSE | Workspace retrieval, answer generation, source metadata, and streaming |
+| Agent/RAG | Python retrieval, Spring orchestration, optional DeepSeek, SSE | Hybrid retrieval, policy gates, grounded generation, citations, memory, and streaming |
 
 ## Request flows
 
@@ -67,11 +82,12 @@ StructurePredictor / VirtualPlotDesigner
 **Knowledge-assisted answer**
 
 ```text
-Vue EventSource
-  -> GET /api/chat/stream-carbon
-  -> Spring SSE adapter
-  -> AnythingLLM workspace retrieval
-  -> configured DeepSeek/LLM provider
+Vue POST + streamed response
+  -> /api/chat/stream-carbon
+  -> identity + session + injection guard
+  -> local hybrid retrieval -> evidence gate
+  -> optional DeepSeek with [S1..Sn] evidence only
+  -> citation validation or extractive fallback
   -> status / delta / meta / done events
 ```
 
@@ -82,18 +98,18 @@ HNBLUE/
 ├─ frontend/        Vue application and public map/data assets
 ├─ backend/         Spring Boot APIs, persistence, cache, security, and tests
 ├─ flask_model/     Training scripts, model artifacts, and Flask inference API
+├─ rag/             Hybrid retrieval, evidence policy, synthetic knowledge, and tests
 ├─ data/examples/   Small synthetic external-data package committed to Git
 ├─ data/raw/        Optional full datasets; ignored by Git
 ├─ sql/             Schema, seed previews, and controlled import scripts
 ├─ scripts/         Data audit, normalization, import, and geospatial tooling
 ├─ docs/            Architecture, API, validation, and delivery evidence
-├─ figures/         Model and system figures
-└─ reports/         Data-gap and validation summaries
+└─ docs/            Architecture, Agent, API, product, and public-data policy
 ```
 
 ## Public data policy
 
-The public repository intentionally does **not** contain complete BAAD, Tallo, ChinAllomeTree, GWM, database dumps, AnythingLLM storage, Redis/MySQL volumes, or local execution traces.
+The public repository intentionally does **not** contain private RAG knowledge, generated indexes, complete licensed datasets, database dumps, Redis/MySQL volumes, conversations, deployment bundles, load-test traces, or local execution evidence.
 
 `data/examples/` contains 15 tiny synthetic CSV files that reproduce the directory and parser contract expected by `ExternalDatasetService`. These rows are fabricated for interface demonstrations and parser tests; they are not scientific observations and must not be used for model training or carbon accounting.
 
@@ -113,7 +129,7 @@ data/raw/
    └─ ... eight matching ecosystem/level files
 ```
 
-The locally audited full package contains 528,420 reference rows, but that number describes external research records—not Hainan field observations and not records committed to this repository.
+Authorized full datasets remain in private storage. Their row counts, samples, derived indexes, and validation evidence are intentionally not published here.
 
 ## Prerequisites
 
@@ -122,7 +138,7 @@ The locally audited full package contains 528,420 reference rows, but that numbe
 - Python 3.11
 - MySQL 8
 - Redis 6+
-- Optional: AnythingLLM with an `hnblue` workspace and an LLM provider
+- Optional: a DeepSeek API key for grounded generation; retrieval and extractive answers work without it
 
 ## Configuration
 
@@ -137,16 +153,16 @@ Required for an integrated environment:
 | `MODEL_API_URL` | Flask base URL; default `http://127.0.0.1:8880` |
 | `HNBLUE_EXTERNAL_DATA_ROOT` | Full or example external-data root |
 | `HNBLUE_JWT_SECRET` | JWT HMAC secret, at least 32 UTF-8 bytes |
+| `HNBLUE_SECRET_ENCRYPTION_KEY` | Base64 32-byte master key for administrator-managed API credentials |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated browser-origin allowlist |
 
 Optional integrations:
 
 | Variable | Purpose |
 |---|---|
-| `ANYTHINGLLM_API_URL` | AnythingLLM API base URL |
-| `ANYTHINGLLM_API_KEY` | Server-side AnythingLLM API key |
-| `ANYTHINGLLM_WORKSPACE` | Workspace slug; default `hnblue` |
-| `DEEPSEEK_API_KEY` | Direct provider integration retained by the backend |
+| `HNBLUE_RAG_SOURCE`, `HNBLUE_RAG_CHUNKS` | Private knowledge mount and generated local index; public defaults use synthetic fixtures |
+| `RAG_API_URL` | Local Flask RAG endpoint used by Spring Boot |
+| `DEEPSEEK_API_KEY` | Optional grounded-generation provider key; never exposed to the browser |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` | Password-reset email |
 | `HNBLUE_FIELD_ENCRYPTION_SECRET` | Optional JPA field-converter secret |
 
@@ -166,7 +182,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe flask_model\carbon_model_api\app.py
 ```
 
-The inference service uses the committed `catboost_pipeline.pkl`. Python pickle/joblib files can execute code while loading; use only the artifact shipped by this repository or another trusted artifact you built yourself.
+The public inference service starts in `synthetic-demo` mode and returns deterministic fixture values for UI integration only. A private deployment can set `HNBLUE_MODEL_PATH` to an authorized trusted artifact. Python pickle/joblib files can execute code while loading, so never load an untrusted model file.
 
 ### 3. Start the backend
 
@@ -187,9 +203,15 @@ npm run serve
 
 The development proxy sends `/api`, `/user`, and `/admin` traffic to Spring Boot.
 
-### 5. Optional AnythingLLM
+### 5. Build the public demonstration RAG index
 
-Create an `hnblue` workspace, ingest only documents you are authorized to use, configure the LLM provider, generate a fresh API key, and export the `ANYTHINGLLM_*` variables before starting Spring Boot. Do not expose AnythingLLM port 3001 directly to the public internet.
+```powershell
+python rag/build_index.py `
+  --source rag/examples/knowledge `
+  --output rag/artifacts
+```
+
+For a private deployment, mount authorized knowledge outside the repository and point `HNBLUE_RAG_SOURCE` to that read-only directory. Never copy production knowledge or generated indexes into Git.
 
 ## Health checks
 
@@ -229,7 +251,7 @@ python -m pip check
 
 The deployed CatBoost pipeline accepts 12 structural, climate, location, and categorical features. The training code targets BAAD field `m.so`, representing above-ground dry biomass in the source workflow. A raw API prediction is therefore not, by itself, a validated per-hectare carbon-stock estimate. Area, stand density, carbon fraction, units, local calibration, and uncertainty must be handled explicitly for scientific use.
 
-Repository documents record an overall test result around `R² = 0.947` and a condition-filtered “mangrove-like” subset around `R² = 0.980`. These are historical experiment records, not guarantees on independent Hainan field data. Reproducible publication should add versioned data, leakage-safe preprocessing, grouped validation, machine-readable metrics, and independent local validation.
+This public release does not publish private training rows or claim deployment accuracy on independent Hainan field data. Reproducible scientific publication would require a separately licensed, versioned dataset, leakage-safe preprocessing, grouped validation, machine-readable metrics, and independent local validation.
 
 SHAP figures, sensitivity analysis, response curves, and virtual plots explain model behavior; they do not establish ecological causality.
 
@@ -238,7 +260,7 @@ SHAP figures, sensitivity analysis, response curves, and virtual plots explain m
 - Never commit API keys, JWT secrets, database/mail credentials, private `.env` files, database dumps, or internal documents.
 - CORS defaults to explicit localhost origins; set `CORS_ALLOWED_ORIGINS` for the deployed hostname.
 - Redis write/read demonstration endpoints and the rate-limit demo endpoint are available only under the Spring `dev` profile.
-- Keep MySQL, Redis, Flask, and AnythingLLM on private interfaces. Expose only the reverse proxy over HTTPS.
+- Keep MySQL, Redis, Flask/model/RAG services on private interfaces. Expose only the reverse proxy over HTTPS.
 - Rotate any credential that may previously have been copied into source, logs, screenshots, or Git history.
 - The current authentication and AI interfaces are suitable for controlled demonstrations, not an unreviewed public production deployment.
 
@@ -246,7 +268,7 @@ SHAP figures, sensitivity analysis, response curves, and virtual plots explain m
 
 Validation records are under `docs/context/`, `docs/v2/`, and `reports/`. They document specific local environments and dates; they are not service-level agreements.
 
-Known boundaries include incomplete local field/flux/UAV raw data, static rather than live remote-sensing assets, environment-dependent AnythingLLM availability, and research-analysis pages that are not all wired into the public UI.
+Known boundaries include intentionally absent field/flux/UAV raw data, static rather than live remote-sensing assets, environment-dependent generation availability, and research-analysis pages that are not all wired into the public UI.
 
 ## License and third-party material
 
@@ -255,10 +277,7 @@ Project source code is released under the [Apache License 2.0](LICENSE). Third-p
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Agentic RAG design](docs/AGENTIC_RAG.md)
+- [Product requirements and design decisions](docs/PRODUCT_REQUIREMENTS.md)
+- [Public data and knowledge policy](docs/PUBLIC_DATA_POLICY.md)
 - [API reference](docs/API.md)
-- [Project context index](docs/context/00_README.md)
-- [Known constraints](docs/context/07_known_constraints.md)
-- [Local validation baseline](docs/context/13_HNBLUE_本地运行基线验收.md)
-- [Redis design and validation](docs/context/14_海南蓝碳平台_Redis缓存设计与验证.md)
-- [Map and UAV asset validation](docs/context/16_海南市县级蓝碳地图与遥感影像资产接入验证.md)
-- [External dataset audit](docs/context/17_外部数据集数据库审计.md)

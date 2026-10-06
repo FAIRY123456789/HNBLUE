@@ -1,0 +1,26 @@
+{
+  "dataset": "HNBLUE synthetic area fixture",
+  "is_simulated": 1,
+  "regions": [
+    {
+      "region_id": "DEMO-REGION-A",
+      "region_name": "示例区域甲",
+      "unit": "ha",
+      "points": [
+        {"year": 2023, "value": 10.0, "source_id": "SYNTHETIC-SOURCE-01", "is_proxy": 0},
+        {"year": 2024, "value": 11.2, "source_id": "SYNTHETIC-SOURCE-01", "is_proxy": 0},
+        {"year": 2025, "value": 12.5, "source_id": "SYNTHETIC-SOURCE-01", "is_proxy": 0}
+      ]
+    },
+    {
+      "region_id": "DEMO-REGION-B",
+      "region_name": "示例区域乙",
+      "unit": "ha",
+      "points": [
+        {"year": 2023, "value": 7.4, "source_id": "SYNTHETIC-SOURCE-02", "is_proxy": 1},
+        {"year": 2024, "value": 7.9, "source_id": "SYNTHETIC-SOURCE-02", "is_proxy": 1},
+        {"year": 2025, "value": 8.3, "source_id": "SYNTHETIC-SOURCE-02", "is_proxy": 1}
+      ]
+    }
+  ]
+}

@@ -40,20 +40,30 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
 
-    private final List<String> allowedOrigins;
+    private static final List<String> LOOPBACK_ORIGIN_PATTERNS = List.of(
+            "http://127.0.0.1:*",
+            "http://localhost:*",
+            "http://[::1]:*"
+    );
+
+    private final List<String> allowedOriginPatterns;
 
     public CorsConfig(@Value("${app.cors.allowed-origins:http://localhost:8080,http://localhost:8090}") String origins) {
-        this.allowedOrigins = Arrays.stream(origins.split(","))
+        List<String> configuredOrigins = Arrays.stream(origins.split(","))
                 .map(String::trim)
                 .filter(value -> !value.isEmpty() && !"*".equals(value))
                 .toList();
-        if (this.allowedOrigins.isEmpty()) {
+        if (configuredOrigins.isEmpty()) {
             throw new IllegalStateException("app.cors.allowed-origins must contain at least one explicit origin");
         }
+        this.allowedOriginPatterns = Stream.concat(configuredOrigins.stream(), LOOPBACK_ORIGIN_PATTERNS.stream())
+                .distinct()
+                .toList();
     }
 
     /**
@@ -63,12 +73,11 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")                          // 匹配所有请求路径
-                .allowedOrigins(allowedOrigins.toArray(String[]::new))
+                .allowedOriginPatterns(allowedOriginPatterns.toArray(String[]::new))
                 .allowedMethods("GET", "POST", "PUT", "DELETE") // 允许的HTTP方法
-                .maxAge(168000)                             // 预检请求缓存时间（秒）
                 .allowedHeaders("*")                        // 允许所有请求头
                 .allowCredentials(true)                     // 允许携带认证信息
-                .maxAge(3600)                               // 重复设置，实际以最后一个为准
+                .maxAge(3600)
                 .exposedHeaders("Authorization");           // 暴露Authorization头部
     }
 
@@ -80,7 +89,7 @@ public class CorsConfig implements WebMvcConfigurer {
     public FilterRegistrationBean<CorsFilter> corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(allowedOrigins);
+        config.setAllowedOriginPatterns(allowedOriginPatterns);
         config.addAllowedHeader("*");                       // 允许所有请求头
         config.addAllowedMethod("*");                       // 允许所有HTTP方法
         config.setAllowCredentials(true);                   // 允许凭证

@@ -1,0 +1,3 @@
+record_id,region_label,indicator,value,unit,year,data_class,is_simulated,source_id,note
+DEMO-001,示例区域甲,红树林面积,12.5,ha,2025,synthetic_demo,true,SYNTHETIC-SOURCE-01,完全虚构的界面测试记录
+DEMO-002,示例区域乙,地上生物量,48.2,t/ha,2025,synthetic_demo,true,SYNTHETIC-SOURCE-02,不得用于科研或正式核算

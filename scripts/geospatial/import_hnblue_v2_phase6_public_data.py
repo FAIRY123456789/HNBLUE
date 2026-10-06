@@ -672,7 +672,7 @@ def write_reports(
 ## 约束执行
 
 - 未执行 `DROP`、`TRUNCATE`、`DELETE`、`RENAME`、`UPDATE`。
-- 未修改前端、后端、Flask、Redis、AnythingLLM。
+- 未修改前端、后端、Flask、Redis 或其他外部知识服务。
 - 文献区域均值保留“文献区域统计/文献推导”说明。
 - allometry 记录保留 source、region、indicator、value、unit、quality 与方法备注。
 

@@ -1,0 +1,9 @@
+{
+  "dataset": "HNBLUE synthetic regional metric fixture",
+  "is_simulated": 1,
+  "metrics": [
+    {"record_id": "DEMO-RS-001", "region_id": "DEMO-REGION-A", "region_name": "示例区域甲", "year_or_period": "2025", "indicator_code": "DEMO_AREA", "indicator_label": "合成覆盖面积", "value": 12.5, "unit": "ha", "is_proxy": 0, "source_id": "SYNTHETIC-SOURCE-01"},
+    {"record_id": "DEMO-RS-002", "region_id": "DEMO-REGION-B", "region_name": "示例区域乙", "year_or_period": "2025", "indicator_code": "DEMO_AREA", "indicator_label": "合成覆盖面积", "value": 8.3, "unit": "ha", "is_proxy": 1, "source_id": "SYNTHETIC-SOURCE-02"},
+    {"record_id": "DEMO-RS-003", "region_id": "DEMO-REGION-A", "region_name": "示例区域甲", "year_or_period": "2025", "indicator_code": "DEMO_INDEX", "indicator_label": "合成生态指数", "value": 0.68, "unit": "index", "is_proxy": 1, "source_id": "SYNTHETIC-SOURCE-01"}
+  ]
+}

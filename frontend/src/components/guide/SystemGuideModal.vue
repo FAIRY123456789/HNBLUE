@@ -320,8 +320,8 @@ onBeforeUnmount(() => {
   }
 }
 
-:global(:root[data-hn-theme="dark"]) .guide-overlay,
-:global(:root.theme-dark) .guide-overlay {
+:global(:root[data-hn-theme="dark"] .guide-overlay),
+:global(:root.theme-dark .guide-overlay) {
   background: rgba(0, 12, 14, 0.7);
 }
 </style>

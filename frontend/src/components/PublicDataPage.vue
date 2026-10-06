@@ -4,15 +4,15 @@
     <PageHero
       title="数据资产"
       eyebrow="DataAssets"
-      subtitle="面向公众浏览和第三方查验的数据资产入口，集中展示来源追溯、文献证据、区域指标和红树林面积记录"
-      :tags="['来源追溯', '文献证据', '区域指标', '面积记录']"
+      subtitle="使用完全合成的测试记录演示来源追溯、证据卡片、区域指标和面积时序的数据产品能力"
+      :tags="['合成数据', '来源追溯', '证据状态', '字段契约']"
     />
 
     <section class="stat-row">
-      <StatCard label="可信数据来源" :value="dataSources.length" unit="项" note="支持公开数据、权威机构资料、学术文献和模型数据的来源核验" />
-      <StatCard label="区域指标记录" :value="remoteMetrics.length" unit="条" note="支持区域比较、变化识别和生态状态研判" />
+      <StatCard label="合成数据来源" :value="dataSources.length" unit="项" note="只演示来源字段、许可字段和追溯链路" />
+      <StatCard label="测试指标记录" :value="remoteMetrics.length" unit="条" note="仅用于界面、筛选和图表联调" />
       <StatCard label="标准指标" :value="indicatorRows.length" unit="项" note="统一指标名称、单位、统计口径和来源说明" />
-      <StatCard label="文献证据" :value="literatureCards.length" unit="条" note="为碳密度、碳储估算和模型参数提供依据" />
+      <StatCard label="证据卡片" :value="literatureCards.length" unit="条" note="全部为虚构记录，不构成科研或业务依据" />
     </section>
 
     <section v-if="loadError" class="content-panel">
@@ -25,7 +25,7 @@
 
     <template v-else>
       <section class="content-panel dataset-panel">
-        <SectionHeader title="外部数据集" eyebrow="External Datasets" subtitle="浏览字段结构、来源信息与全部真实记录" />
+        <SectionHeader title="外部数据集" eyebrow="External Datasets" subtitle="使用小型合成 CSV 演示字段结构、来源信息和分页浏览" />
         <ExternalDatasetGrid />
       </section>
 
@@ -47,7 +47,7 @@
       </section>
 
       <section class="content-panel">
-        <SectionHeader title="区域指标" eyebrow="Regional Metrics" subtitle="展示区域指标与遥感记录，说明指标用途、区域和来源依据">
+        <SectionHeader title="合成区域指标" eyebrow="Regional Metrics" subtitle="展示虚构指标记录，说明字段、单位、类型和来源契约">
           <label class="select-pill">
             <span>单位</span>
             <select v-model="selectedRemoteUnit">
@@ -74,7 +74,7 @@
       </section>
 
       <section class="content-panel">
-        <SectionHeader title="文献证据" eyebrow="Evidence" subtitle="精选文献碳储记录，保留来源链接用于评审追溯" />
+        <SectionHeader title="证据卡片" eyebrow="Evidence" subtitle="使用虚构证据记录演示引用、质量等级与追溯界面" />
         <div v-if="visibleLiteratureCards.length" class="card-grid">
           <article v-for="card in visibleLiteratureCards" :key="card.record_id" class="evidence-card">
             <div class="card-top">
@@ -89,61 +89,6 @@
         </div>
         <EmptyState v-else title="暂无文献证据" message="当前数据范围未覆盖文献碳储卡片" />
       </section>
-
-
-      <section class="content-panel uav-panel">
-        <SectionHeader title="无人机遥感与野外调查影像" eyebrow="UAV & Fieldwork" subtitle="展示公开论文中的研究区图、UAV-LiDAR 制图产品和野外调查场景，图件仅用于来源核验和研究方法理解" />
-        <div v-if="uavAssets.length" class="uav-layout">
-          <article v-for="asset in uavAssets" :key="asset.asset_id" :class="['uav-card', asset.asset_id.includes('QINGLAN') ? 'wide' : '', asset.category === '野外调查影像' ? 'fieldwork' : '']">
-            <button type="button" class="uav-image-button" @click="activeUavAsset = asset" :aria-label="`查看${asset.title}`">
-              <img :src="asset.image_url" :alt="asset.title" loading="lazy" />
-            </button>
-            <div class="uav-copy">
-              <div class="uav-topline">
-                <span>{{ asset.category }}</span>
-                <span>CC BY</span>
-              </div>
-              <h3>{{ asset.title }}</h3>
-              <p>{{ asset.description_cn }}</p>
-              <dl>
-                <div><dt>研究区域</dt><dd>{{ asset.specific_location || asset.region_name }}</dd></div>
-                <div><dt>发表年份</dt><dd>{{ asset.capture_year }}</dd></div>
-                <div><dt>来源期刊</dt><dd>{{ asset.source_journal }}</dd></div>
-                <div><dt>图号</dt><dd>{{ asset.figure_no }}</dd></div>
-              </dl>
-              <div class="uav-actions">
-                <button type="button" @click="activeUavAsset = asset">查看详情</button>
-                <a :href="asset.source_url" target="_blank" rel="noreferrer">查看原始来源</a>
-              </div>
-            </div>
-          </article>
-        </div>
-        <EmptyState v-else title="暂无影像资产" message="影像清单未读取成功" />
-      </section>
-
-      <div v-if="activeUavAsset" class="uav-modal" role="dialog" aria-modal="true" @click.self="activeUavAsset = null">
-        <article class="uav-dialog">
-          <button type="button" class="modal-close" @click="activeUavAsset = null" aria-label="关闭详情">×</button>
-          <img :src="activeUavAsset.image_url" :alt="activeUavAsset.title" />
-          <div class="dialog-copy">
-            <span class="quality">{{ activeUavAsset.category }}</span>
-            <h3>{{ activeUavAsset.title }}</h3>
-            <p>{{ activeUavAsset.description_cn }}</p>
-            <p class="usage-note">{{ activeUavAsset.usage_note }}</p>
-            <dl class="dialog-meta">
-              <div><dt>作者</dt><dd>{{ activeUavAsset.authors }}</dd></div>
-              <div><dt>论文标题</dt><dd>{{ activeUavAsset.paper_title }}</dd></div>
-              <div><dt>期刊与卷期</dt><dd>{{ activeUavAsset.source_journal }} {{ activeUavAsset.volume_issue_article }}</dd></div>
-              <div><dt>Figure</dt><dd>{{ activeUavAsset.figure_no }}：{{ activeUavAsset.figure_title }}</dd></div>
-              <div><dt>DOI</dt><dd>{{ activeUavAsset.doi }}</dd></div>
-              <div><dt>许可</dt><dd>{{ activeUavAsset.license }}</dd></div>
-              <div class="full"><dt>完整署名</dt><dd>{{ activeUavAsset.attribution_text }}</dd></div>
-            </dl>
-            <a class="source-link" :href="activeUavAsset.source_url" target="_blank" rel="noreferrer">打开论文页面</a>
-          </div>
-        </article>
-      </div>
-
       <section class="content-panel source-panel">
         <SectionHeader title="来源追溯" eyebrow="Sources" subtitle="展示公开来源名称、类型、用途和记录数量，便于第三方查验" />
         <div v-if="dataSources.length" class="source-grid">
@@ -180,9 +125,9 @@ import StatCard from "@/components/common/StatCard.vue";
 import EmptyState from "@/components/common/EmptyState.vue";
 import ExternalDatasetGrid from "@/components/external-datasets/ExternalDatasetGrid.vue";
 import { formatPublicSource, formatSourceType } from "@/config/publicPresentationPolicy";
+import { publicUrl } from "@/utils/urls";
 
-const DATA_BASE = "/data/hnblue_v2_public/normalized";
-const UAV_MANIFEST_URL = "/data/uav/uav_image_manifest.json";
+const DATA_BASE = publicUrl("/data/demo");
 const isLoading = ref(true);
 const loadError = ref("");
 const areaData = ref({ regions: [] });
@@ -190,8 +135,6 @@ const remoteData = ref({ metrics: [] });
 const literatureData = ref({ cards: [] });
 const dataSources = ref([]);
 const indicatorRows = ref([]);
-const uavAssets = ref([]);
-const activeUavAsset = ref(null);
 const selectedRegionId = ref("");
 const selectedRemoteUnit = ref("");
 const areaChartRef = ref(null);
@@ -283,11 +226,11 @@ function renderRemoteChart() {
       axisPointer: { type: "shadow" },
       formatter: (params) => {
         const item = rows[params?.[0]?.dataIndex] || {};
-        return `${item.region_name || '-'}<br/>指标：${item.indicator_label || item.indicator_code || '-'}<br/>年份：${item.year_or_period || '-'}<br/>数值：${formatNumber(item.value)} ${item.unit || unit}`;
+        return `${shortRegionName(item.region_name)}<br/>指标：${item.indicator_label || item.indicator_code || '-'}<br/>年份：${item.year_or_period || '-'}<br/>数值：${formatNumber(item.value)} ${item.unit || unit}`;
       },
     },
     grid: { left: 78, right: 36, top: 42, bottom: 94, containLabel: true },
-    xAxis: { type: "category", data: rows.map((item) => `${item.region_name || '-'}\n${item.year_or_period || '-'}`), axisLabel: { interval: 0, rotate: 30, color: themeTextColor() } },
+    xAxis: { type: "category", data: rows.map((item) => `${shortRegionName(item.region_name)}\n${item.year_or_period || '-'}`), axisLabel: { interval: 0, rotate: 30, color: themeTextColor() } },
     yAxis: { type: "value", name: unit, axisLabel: { color: themeTextColor() }, nameTextStyle: { color: themeTextColor() } },
     series: [{
       name: unit,
@@ -299,28 +242,26 @@ function renderRemoteChart() {
   }, true);
 }
 
+function shortRegionName(value) {
+  return String(value || '-').replace(/^海南岛[-—·\s]*/, '');
+}
+
 function resizeCharts() { areaChart?.resize(); remoteChart?.resize(); }
 
 async function loadData() {
   try {
-    const [area, remote, literature, sourcesCsv, indicatorsCsv, uavManifest] = await Promise.all([
+    const [area, remote, literature, sourcesCsv, indicatorsCsv] = await Promise.all([
       fetchJson("frontend_mangrove_area_timeseries.json"),
       fetchJson("frontend_remote_sensing_metrics.json"),
       fetchJson("frontend_literature_carbon_cards.json"),
       fetchText("display_data_sources.csv"),
       fetchText("display_region_dictionary.csv"),
-      fetch(UAV_MANIFEST_URL, { cache: "no-cache" }).then((response) => {
-        if (!response.ok) throw new Error(`读取无人机遥感与野外调查影像清单失败：HTTP ${response.status}`);
-        return response.json();
-      }),
     ]);
     areaData.value = area;
     remoteData.value = remote;
     literatureData.value = literature;
     dataSources.value = parseCsv(sourcesCsv);
     indicatorRows.value = parseCsv(indicatorsCsv);
-    uavAssets.value = uavManifest;
-    activeUavAsset.value = null;
     selectedRegionId.value = [...areaRegions.value].sort((a, b) => (b.points?.length || 0) - (a.points?.length || 0))[0]?.region_id || "";
     selectedRemoteUnit.value = remoteUnits.value.includes("ha") ? "ha" : remoteUnits.value[0] || "";
   } catch (error) {
@@ -338,12 +279,6 @@ function formatNumber(value) {
   if (!Number.isFinite(number)) return value ?? '-';
   return number.toLocaleString('zh-CN', { maximumFractionDigits: Math.abs(number) >= 10 ? 1 : 2 });
 }
-
-
-function closeUavOnEsc(event) {
-  if (event.key === "Escape") activeUavAsset.value = null;
-}
-
 function sourceDisplayName(source) {
   const byId = {
     SRC_LIT_BAMEN_SOC_2022: '八门湾红树林土壤有机碳研究',
@@ -388,12 +323,10 @@ onMounted(() => {
   document.documentElement.style.overflow = "auto";
   loadData();
   window.addEventListener("resize", resizeCharts);
-  window.addEventListener("keydown", closeUavOnEsc);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resizeCharts);
-  window.removeEventListener("keydown", closeUavOnEsc);
   areaChart?.dispose();
   remoteChart?.dispose();
 });
@@ -635,23 +568,23 @@ a {
 dt { color: var(--hn-muted); font-size: 12px; }
 dd { margin: 0; color: var(--hn-text); font-weight: 900; line-height: 1.45; }
 
-:global(:root[data-hn-theme="dark"]) .dataset-card,
-:global(:root.theme-dark) .dataset-card,
-:global(:root[data-hn-theme="dark"]) .evidence-card,
-:global(:root.theme-dark) .evidence-card,
-:global(:root[data-hn-theme="dark"]) .source-card,
-:global(:root.theme-dark) .source-card {
+:global(:root[data-hn-theme="dark"] .dataset-card),
+:global(:root.theme-dark .dataset-card),
+:global(:root[data-hn-theme="dark"] .evidence-card),
+:global(:root.theme-dark .evidence-card),
+:global(:root[data-hn-theme="dark"] .source-card),
+:global(:root.theme-dark .source-card) {
   background: var(--hn-card);
 }
 
-:global(:root[data-hn-theme="dark"]) .dataset-card p,
-:global(:root.theme-dark) .dataset-card p,
-:global(:root[data-hn-theme="dark"]) .evidence-card p,
-:global(:root.theme-dark) .evidence-card p,
-:global(:root[data-hn-theme="dark"]) .official-name,
-:global(:root.theme-dark) .official-name,
-:global(:root[data-hn-theme="dark"]) .metric-row,
-:global(:root.theme-dark) .metric-row {
+:global(:root[data-hn-theme="dark"] .dataset-card p),
+:global(:root.theme-dark .dataset-card p),
+:global(:root[data-hn-theme="dark"] .evidence-card p),
+:global(:root.theme-dark .evidence-card p),
+:global(:root[data-hn-theme="dark"] .official-name),
+:global(:root.theme-dark .official-name),
+:global(:root[data-hn-theme="dark"] .metric-row),
+:global(:root.theme-dark .metric-row) {
   color: var(--hn-muted);
 }
 
@@ -706,24 +639,28 @@ dd { margin: 0; color: var(--hn-text); font-weight: 900; line-height: 1.45; }
 .dataset-meta-row:last-child dd { -webkit-line-clamp: 2; }
 
 .source-grid {
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
   align-items: stretch;
 }
 .source-card {
-  min-height: 344px;
+  min-height: 286px;
   display: flex;
   flex-direction: column;
+  padding: 14px;
 }
 .source-card h3 {
-  min-height: 54px;
+  min-height: 48px;
   margin: 0;
-  line-height: 27px;
+  font-size: 18px;
+  line-height: 24px;
   white-space: normal;
   overflow-wrap: anywhere;
 }
 .official-name {
-  min-height: 44px;
-  margin-top: 4px;
+  min-height: 38px;
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.45;
   overflow-wrap: anywhere;
 }
 .source-type {
@@ -739,13 +676,13 @@ dd { margin: 0; color: var(--hn-text); font-weight: 900; line-height: 1.45; }
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
-  margin: 14px 0 0;
+  margin: 10px 0 0;
 }
 .source-meta {
   display: grid;
   grid-template-rows: none;
-  row-gap: 12px;
-  margin: 22px 0 18px;
+  row-gap: 8px;
+  margin: 14px 0 12px;
 }
 .source-meta-row {
   display: grid;
@@ -763,7 +700,7 @@ dd { margin: 0; color: var(--hn-text); font-weight: 900; line-height: 1.45; }
 }
 .source-actions {
   margin-top: auto;
-  min-height: 52px;
+  min-height: 44px;
   align-self: stretch;
 }
 .source-actions span,
@@ -772,191 +709,5 @@ dd { margin: 0; color: var(--hn-text); font-weight: 900; line-height: 1.45; }
   font-weight: 700;
 }
 
-
-.uav-layout {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.uav-card {
-  display: grid;
-  grid-template-rows: minmax(240px, auto) 1fr;
-  border: 1px solid var(--hn-border);
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--hn-card);
-}
-
-.uav-card.wide,
-.uav-card.fieldwork {
-  grid-column: 1 / -1;
-}
-
-.uav-image-button {
-  width: 100%;
-  min-height: 240px;
-  padding: 12px;
-  border: 0;
-  background: #f7faf9;
-  cursor: zoom-in;
-}
-
-.uav-card.wide .uav-image-button { max-height: 520px; }
-.uav-card:not(.wide):not(.fieldwork) .uav-image-button { max-height: 440px; }
-.uav-card.fieldwork .uav-image-button { max-height: 330px; }
-
-.uav-image-button img,
-.uav-dialog img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  max-height: inherit;
-  object-fit: contain;
-}
-
-.uav-copy {
-  padding: 16px;
-}
-
-.uav-topline,
-.uav-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.uav-topline span {
-  min-height: 24px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 8px;
-  border-radius: 6px;
-  background: var(--hn-soft);
-  color: var(--hn-accent);
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.uav-copy h3 {
-  height: auto;
-  margin: 12px 0 8px;
-  white-space: normal;
-  line-height: 1.35;
-}
-
-.uav-copy p {
-  min-height: 74px;
-  color: var(--hn-muted);
-  line-height: 1.65;
-}
-
-.uav-copy dl,
-.dialog-meta {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin: 14px 0;
-}
-
-.uav-copy dl div,
-.dialog-meta div {
-  padding: 10px;
-  border-radius: 8px;
-  background: var(--hn-soft);
-}
-
-.dialog-meta .full { grid-column: 1 / -1; }
-
-.uav-actions button,
-.uav-actions a,
-.source-link {
-  min-height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 12px;
-  border: 1px solid var(--hn-border);
-  border-radius: 7px;
-  background: var(--hn-accent);
-  color: #08201c;
-  font-weight: 900;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.uav-actions a {
-  background: var(--hn-soft);
-  color: var(--hn-accent);
-}
-
-.uav-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(5, 24, 21, 0.68);
-}
-
-.uav-dialog {
-  position: relative;
-  width: min(1180px, 96vw);
-  max-height: 92vh;
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
-  overflow: auto;
-  border-radius: 8px;
-  background: var(--hn-panel-solid);
-  box-shadow: var(--hn-shadow-strong);
-}
-
-.uav-dialog > img {
-  align-self: start;
-  max-height: 86vh;
-  padding: 16px;
-  background: #f7faf9;
-}
-
-.dialog-copy {
-  padding: 22px;
-}
-
-.dialog-copy h3 {
-  height: auto;
-  margin: 12px 0;
-  white-space: normal;
-}
-
-.usage-note {
-  padding: 12px;
-  border-radius: 8px;
-  background: var(--hn-soft);
-}
-
-.modal-close {
-  position: absolute;
-  right: 12px;
-  top: 10px;
-  z-index: 2;
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--hn-border);
-  border-radius: 7px;
-  background: var(--hn-card);
-  color: var(--hn-text);
-  font-size: 24px;
-  cursor: pointer;
-}
-
-@media (max-width: 820px) {
-  .uav-layout { grid-template-columns: 1fr; }
-  .uav-dialog { grid-template-columns: 1fr; }
-  .uav-copy dl,
-  .dialog-meta { grid-template-columns: 1fr; }
-}
 
 </style>

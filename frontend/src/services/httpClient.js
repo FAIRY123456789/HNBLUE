@@ -1,5 +1,7 @@
 ﻿import { useAuth } from '@/composables/useAuth';
 
+import { apiUrl } from '@/utils/urls';
+
 function normalizeError(payload, fallback) {
   if (!payload) return fallback;
   if (typeof payload === 'string') return payload;
@@ -11,7 +13,7 @@ export async function apiFetch(url, options = {}) {
   const headers = { ...(options.headers || {}) };
   const hasBody = options.body !== undefined && !(options.body instanceof FormData);
   if (hasBody && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
-  const response = await fetch(url, {
+  const response = await fetch(apiUrl(url), {
     ...options,
     headers: auth.authHeaders(headers),
   });

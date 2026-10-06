@@ -32,14 +32,27 @@ API端点说明：
 """
 from flask import Flask, request, Response, jsonify, send_from_directory
 import json
-from predict_service import predict_carbon_stock, batch_predict_carbon_stock, sensitivity_analysis, save_sensitivity_plot, explain_sensitivity
+from predict_service import MODEL_MODE, predict_carbon_stock, batch_predict_carbon_stock, sensitivity_analysis, save_sensitivity_plot, explain_sensitivity
 from flask_cors import CORS  # 引入 CORS 支持
 import os
+import sys
 from pathlib import Path
+
+project_root = Path(__file__).resolve().parents[2]
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+from rag_api import create_rag_blueprint
 
 # Flask 应用对象
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:8080"])
+app.register_blueprint(create_rag_blueprint(project_root))
+cors_origins = [item.strip() for item in os.getenv("HNBLUE_MODEL_CORS_ORIGINS", "http://localhost:8080").split(",") if item.strip()]
+CORS(app, origins=cors_origins)
+model_output_dir = Path(
+    os.getenv("HNBLUE_MODEL_OUTPUT_DIR", str(Path(__file__).resolve().parent / "sensitivity_plots"))
+).expanduser().resolve()
+
 
 # 所有路由都是以app对象为基础，所以称为@app.route
 @app.route("/api/predict-carbon", methods=["POST"])
@@ -50,7 +63,7 @@ def predict():
         result = predict_carbon_stock(input_data)
 
         # 构造 JSON 字符串，并手动设置正确的 Content-Type
-        response_data = json.dumps({"prediction": result})
+        response_data = json.dumps({"prediction": result, "modelMode": MODEL_MODE})
         return Response(response=response_data, status=200, mimetype="application/json")
 
     except Exception as e:
@@ -66,7 +79,7 @@ def batch_predict():
             raise ValueError("请提交样地数组（list），而不是单个样地对象。")
 
         results = batch_predict_carbon_stock(sample_list)
-        return jsonify({"predictions": results})
+        return jsonify({"predictions": results, "modelMode": MODEL_MODE})
 
     except Exception as e:
         error_data = json.dumps({"error": str(e)})
@@ -126,7 +139,7 @@ def sensitivity_plot():
 
 @app.route('/sensitivity_plots/<filename>')
 def serve_sensitivity_plot(filename):
-    return send_from_directory('sensitivity_plots', filename)
+    return send_from_directory(str(model_output_dir), filename)
 
 @app.route("/api/sensitivity-explain", methods=["POST"])
 def sensitivity_explain():
@@ -138,11 +151,15 @@ def sensitivity_explain():
         "explanation": explanation
     })
 
+
 # 用作测试
 @app.route("/ping", methods=["GET"])
 def ping():
     print("/ping 路由被调用了！")
-    return jsonify({"msg": "pong"})
+    return jsonify({"msg": "pong", "modelMode": MODEL_MODE})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8880)
+    app.run(
+        host=os.getenv("HNBLUE_MODEL_HOST", "127.0.0.1"),
+        port=int(os.getenv("HNBLUE_MODEL_PORT", "8880")),
+    )

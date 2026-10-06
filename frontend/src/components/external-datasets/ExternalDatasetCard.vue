@@ -82,8 +82,8 @@ h3 { margin: 18px 0 8px; color: var(--hn-text); font-size: 19px; line-height: 1.
 .open-button { justify-content: space-between; width: 100%; min-height: 42px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--hn-accent); color: #fff; font-weight: 700; cursor: pointer; }
 .source-link { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; padding: 0 12px; border: 1px solid var(--hn-border-strong); border-radius: 8px; color: var(--hn-accent); font-size: 12px; font-weight: 800; text-decoration: none; white-space: nowrap; }
 .source-link:hover { border-color: var(--hn-accent); background: var(--hn-soft); }
-:global(:root[data-hn-theme="dark"]) .open-button,
-:global(:root.theme-dark) .open-button { color: #062b26; }
+:global(:root[data-hn-theme="dark"] .open-button),
+:global(:root.theme-dark .open-button) { color: var(--hn-on-accent); }
 
 @media (max-width: 520px) {
   .external-card { min-height: 0; padding: 18px; }

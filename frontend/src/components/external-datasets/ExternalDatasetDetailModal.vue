@@ -11,7 +11,11 @@
           <button type="button" class="close" aria-label="关闭外部数据集详情" @click="$emit('close')">×</button>
         </header>
 
-        <div v-if="error" class="state error" role="alert">{{ error }}</div>
+        <div v-if="error" class="state degraded" role="status">
+          <strong>记录分页暂时未连接</strong>
+          <span>{{ error }}</span>
+          <a :href="dataset.sourceUrl" target="_blank" rel="noopener noreferrer">访问权威来源 ↗</a>
+        </div>
         <div v-else-if="loading" class="state" aria-live="polite">正在读取数据表清单…</div>
         <template v-else>
           <div class="dialog-toolbar">
@@ -82,8 +86,8 @@ async function loadTables() {
     const response = await fetchExternalDatasetTables(props.dataset.datasetId);
     tables.value = response.tables || [];
     selectedTableName.value = tables.value[0]?.tableName || "";
-  } catch (requestError) {
-    error.value = requestError.message || "数据表清单读取失败";
+  } catch {
+    error.value = "当前仍可查看上方简介与权威来源；记录服务恢复后可继续浏览表结构和分页记录。";
   } finally {
     loading.value = false;
   }
@@ -127,6 +131,9 @@ li { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 8
 li b { color: var(--hn-muted); font-size: 12px; white-space: nowrap; }
 .source-link { display: inline-flex; min-height: 42px; align-items: center; padding: 0 14px; border-radius: 8px; background: var(--hn-soft); color: var(--hn-accent); font-weight: 800; text-decoration: none; }
 .state { margin-top: 18px; padding: 24px; border-radius: 9px; background: var(--hn-soft); color: var(--hn-muted); }
+.state.degraded { display: grid; gap: 10px; }
+.state.degraded strong { color: var(--hn-text); }
+.state.degraded a { width: fit-content; color: var(--hn-accent); font-weight: 800; text-decoration: none; }
 .error { color: var(--hn-danger); }
 @media (max-width: 860px) { .modal-backdrop { padding: 0; } .dataset-dialog { width: 100vw; min-height: 100vh; max-height: 100vh; border-radius: 0; } .dialog-toolbar, header { align-items: stretch; flex-direction: column; } .close { position: absolute; top: 14px; right: 14px; } .overview-stats { grid-template-columns: repeat(2, 1fr); } .overview-grid { grid-template-columns: 1fr; } }
 </style>

@@ -1,0 +1,27 @@
+[
+  {
+    "id": "DEMO-R01",
+    "query": "HNBLUE 的证据助手为什么要先检索再生成？",
+    "relevant_sources": ["platform-overview.md", "agent-policy.md"]
+  },
+  {
+    "id": "DEMO-R02",
+    "query": "知识库证据不足时助手应该怎么办？",
+    "relevant_sources": ["agent-policy.md"]
+  },
+  {
+    "id": "DEMO-R03",
+    "query": "公开仓库中的记录可以用于正式碳核算吗？",
+    "relevant_sources": ["data-policy.md"]
+  },
+  {
+    "id": "DEMO-R04",
+    "query": "CatBoost 预测为什么不能直接当现场监测？",
+    "relevant_sources": ["model-boundary.md"]
+  },
+  {
+    "id": "DEMO-R05",
+    "query": "对话记忆如何减少隐私暴露？",
+    "relevant_sources": ["agent-policy.md"]
+  }
+]

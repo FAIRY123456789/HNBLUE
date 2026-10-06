@@ -2,14 +2,14 @@
   <article class="result-panel">
     <div class="result-head">
       <span>{{ tag }}</span>
-      <strong>{{ displayValue }} t/ha</strong>
+      <strong>{{ displayValue }}（m.so 原始输出）</strong>
     </div>
     <dl>
       <div><dt>模型状态</dt><dd>{{ status }}</dd></div>
       <div><dt>估算时间</dt><dd>{{ time || '-' }}</dd></div>
       <div><dt>核心参数</dt><dd>{{ summary }}</dd></div>
     </dl>
-    <p>该结果用于结构参数分析和情景比较，正式业务使用仍需结合实测、遥感和文献证据核验</p>
+    <p>该模型预测 BAAD 的 m.so 地上部生物量目标；原始输出未完成单位面积或碳储量换算。正式使用需核实原始单位、林分密度及本地校准。</p>
   </article>
 </template>
 

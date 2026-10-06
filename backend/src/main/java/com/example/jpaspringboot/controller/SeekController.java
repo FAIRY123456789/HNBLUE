@@ -38,6 +38,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -51,6 +52,7 @@ import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("${chat.api.path}")
+@ConditionalOnProperty(name = "deepseek.legacy-direct.enabled", havingValue = "true")
 public class SeekController {
     private static final Logger logger = LoggerFactory.getLogger(SeekController.class);
 

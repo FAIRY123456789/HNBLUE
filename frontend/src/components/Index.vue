@@ -75,6 +75,7 @@ import { ref, reactive, getCurrentInstance, nextTick, computed } from 'vue';
 import { mapState, mapGetters, mapActions } from 'vuex';
 import { MdPreview, MdCatalog } from 'md-editor-v3';
 import 'md-editor-v3/lib/style.css';
+import { apiUrl } from '@/utils/urls';
 
 export default {
   computed: {
@@ -127,7 +128,7 @@ export default {
       });
       this.loading = true;
       // 建立EventSource连接
-      const eventSource = new EventSource(`/api/chat/stream?message=${message}`);
+      const eventSource = new EventSource(`${apiUrl('/api/chat/stream')}?message=${encodeURIComponent(message)}`);
       this.formData.content = '';
       /**
        * 处理服务器推送的消息

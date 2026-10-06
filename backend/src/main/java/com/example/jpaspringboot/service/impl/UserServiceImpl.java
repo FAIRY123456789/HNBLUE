@@ -83,7 +83,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public int addUser(String name, String password) {
-        return 0;
+        String normalizedName = normalizeUsername(name);
+        if (normalizedName == null) {
+            throw new IllegalArgumentException("用户名不能为空");
+        }
+        return addUser(normalizedName, password,
+                normalizedName.toLowerCase(Locale.ROOT) + "@loadtest.invalid", "2000-01-01");
     }
 
     /**
@@ -289,11 +294,26 @@ public class UserServiceImpl implements UserService {
             return userRepository.findAll(pageable);
         }
 
-        List<Integer> userIds = managedUserIds(admin);
-        if (userIds.isEmpty()) {
-            return new PageImpl<>(new ArrayList<>(), pageable, 0);
+        // Page relation IDs through the composite (admin_id, user_id) key first, then
+        // batch-load the 20 user entities. A native query declared on the relation
+        // repository cannot reliably materialize a different entity type (User).
+        // Passing the controller's Sort.by("id") through would also append ORDER BY
+        // r.id even though the relation table has no standalone id column.
+        Pageable relationPageable = Pageable.ofSize(pageable.getPageSize())
+                .withPage(pageable.getPageNumber());
+        Page<Integer> userIdPage = administratorUserRelationRepository
+                .findUserIdsByAdminId(admin.getId(), relationPageable);
+        if (userIdPage.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, userIdPage.getTotalElements());
         }
-        return userRepository.findAllById(userIds, pageable);
+
+        Map<Integer, User> usersById = userRepository.findByIdIn(userIdPage.getContent()).stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
+        List<User> orderedUsers = userIdPage.getContent().stream()
+                .map(usersById::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        return new PageImpl<>(orderedUsers, pageable, userIdPage.getTotalElements());
     }
 
     /**
@@ -531,11 +551,8 @@ public class UserServiceImpl implements UserService {
             return userRepository.searchByKeyword(normalizedKeyword, pageable);
         }
 
-        List<Integer> userIds = managedUserIds(admin);
-        if (userIds.isEmpty()) {
-            return new PageImpl<>(new ArrayList<>(), pageable, 0);
-        }
-        return userRepository.searchByKeywordInIds(normalizedKeyword, userIds, pageable);
+        return administratorUserRelationRepository.searchUsersByAdminId(
+                admin.getId(), normalizedKeyword, pageable);
     }
 
     public User findUserForAdmin(String token, Long userId) {
@@ -565,17 +582,6 @@ public class UserServiceImpl implements UserService {
 
     private boolean isPrimaryAdmin(Admin admin) {
         return admin != null && (Integer.valueOf(100000).equals(admin.getId()) || "Admin_100000".equals(admin.getName()));
-    }
-
-    private List<Integer> managedUserIds(Admin admin) {
-        if (admin == null) {
-            return new ArrayList<>();
-        }
-        return administratorUserRelationRepository.findByAdmin(admin)
-                .stream()
-                .map(relation -> relation.getUser().getId())
-                .distinct()
-                .collect(Collectors.toList());
     }
 
     private String normalizeUsername(String username) {
@@ -610,8 +616,6 @@ public class UserServiceImpl implements UserService {
         if (admin == null || user == null) {
             return false;
         }
-        return administratorUserRelationRepository.findByUser(user)
-                .stream()
-                .anyMatch(relation -> relation.getAdmin() != null && admin.getId().equals(relation.getAdmin().getId()));
+        return administratorUserRelationRepository.existsRelation(admin.getId(), user.getId());
     }
 }

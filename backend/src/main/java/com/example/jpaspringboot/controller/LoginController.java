@@ -40,6 +40,7 @@ import io.netty.util.ResourceLeakDetector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -73,6 +74,9 @@ public class LoginController {
     @Autowired
     private UserRepository userRepository;
 
+    @Value("${hnblue.load-test-login.enabled:false}")
+    private boolean loadTestLoginEnabled;
+
     /**
      * 用户登录接口
      * 支持管理员和普通用户双重身份认证
@@ -92,6 +96,14 @@ public class LoginController {
 
         String username = loginRequest.getUsername().trim();
         String password = loginRequest.getPassword();
+
+        // 性能账号会真实写入用户表，但默认禁止从公网登录。需要压测时只能在
+        // 受控窗口显式开启 HNBLUE_LOAD_TEST_LOGIN_ENABLED，避免共享测试密码
+        // 被用于消耗 AI 配额或制造无效业务数据。
+        if (isPerformanceAccount(username) && !loadTestLoginEnabled) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "用户名或密码错误"));
+        }
 
         try {
             if (adminServiceImpl.authenticateAdmin(username, password)) {
@@ -265,6 +277,10 @@ public class LoginController {
         }
         String value = username.trim();
         return value.isEmpty() ? null : value;
+    }
+
+    private boolean isPerformanceAccount(String username) {
+        return username != null && username.toLowerCase(Locale.ROOT).startsWith("perf_user_");
     }
 
     private String normalizeEmail(String email) {
