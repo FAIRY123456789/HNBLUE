@@ -266,7 +266,7 @@ SHAP figures, sensitivity analysis, response curves, and virtual plots explain m
 
 ## Evidence and limitations
 
-Validation records are under `docs/context/`, `docs/v2/`, and `reports/`. They document specific local environments and dates; they are not service-level agreements.
+Public verification is represented by synthetic fixtures, automated tests, and the boundaries documented in [`docs/PUBLIC_DATA_POLICY.md`](docs/PUBLIC_DATA_POLICY.md). Private run artifacts remain outside Git.
 
 Known boundaries include intentionally absent real field, flux, UAV, and remote-sensing data; environment-dependent generation availability; and research-analysis pages that are not all wired into the public UI.
 
