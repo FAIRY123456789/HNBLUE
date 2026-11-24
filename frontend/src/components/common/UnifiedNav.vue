@@ -52,7 +52,7 @@ const THEME_KEY = 'hnblue_site_theme';
 const theme = ref(localStorage.getItem(THEME_KEY) || 'light');
 const themeMenuOpen = ref(false);
 const themePicker = ref(null);
-const items = [
+const baseItems = [
   { label: '首页', to: '/' },
   { label: '碳溯', to: '/carbonseek' },
   { label: '数据资产', to: '/v2-public-data' },
@@ -61,8 +61,18 @@ const items = [
 ];
 
 const isAuthenticated = computed(() => auth.isAuthenticated.value);
-const accountPath = computed(() => (auth.isAdmin.value ? '/usermanage' : '/userinfo'));
-const accountLabel = computed(() => (auth.isAdmin.value ? '用户管理' : '个人中心'));
+const items = computed(() => {
+  const value = [...baseItems];
+  if (auth.isAuthenticated.value) value.splice(4, 0, { label: 'Agent 工作台', to: '/agent-workspace' });
+  if (auth.isAdmin.value) value.splice(5, 0, { label: '公众用户', to: '/usermanage' });
+  return value;
+});
+const accountPath = computed(() => auth.isAdmin.value
+  ? '/professional-admin'
+  : auth.isProfessional.value
+    ? (auth.passwordChangeRequired.value ? '/professional/change-password' : '/agent-workspace')
+    : '/userinfo');
+const accountLabel = computed(() => auth.isAdmin.value ? '专业用户管理' : auth.isProfessional.value ? '专业工作台' : '个人中心');
 
 function applyTheme(value) {
   const normalized = value === 'dark' ? 'dark' : 'light';

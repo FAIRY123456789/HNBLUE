@@ -16,6 +16,9 @@ const VirtualPlotDesignerPage = () => import("@/components/VirtualPlotDesignerPa
 const UserInfo = () => import("@/components/UserInfo.vue");
 const UserManage = () => import("@/components/UserManage.vue");
 const ProviderKeySetup = () => import("@/components/ProviderKeySetup.vue");
+const ProfessionalAdmin = () => import("@/components/ProfessionalAdmin.vue");
+const ProfessionalPassword = () => import("@/components/ProfessionalPassword.vue");
+const AgentWorkspace = () => import("@/components/AgentWorkspace.vue");
 
 const PlaceholderPage = {
   props: {
@@ -43,9 +46,12 @@ const routes = [
   { path: "/v2-government", name: "V2Government", component: V2GovernmentPage, alias: ["/government-workbench"] },
   { path: "/visual", name: "Visual", component: MapExplorePage, alias: ["/devisual"] },
   { path: "/devisual/:name", name: "DeVisualCompat", component: MapExplorePage },
-  { path: "/userinfo", name: "UserInfo", component: UserInfo, meta: { requiresAuth: true, roles: ["User", "Admin"] } },
+  { path: "/userinfo", name: "UserInfo", component: UserInfo, meta: { requiresAuth: true, roles: ["User", "Admin", "Professional"] } },
   { path: "/usermanage", name: "UserManage", component: UserManage, meta: { requiresAuth: true, roles: ["Admin"] } },
-  { path: "/internal-provider-setup", name: "ProviderKeySetup", component: ProviderKeySetup },
+  { path: "/professional-admin", name: "ProfessionalAdmin", component: ProfessionalAdmin, meta: { requiresAuth: true, roles: ["Admin"] } },
+  { path: "/professional/change-password", name: "ProfessionalPassword", component: ProfessionalPassword, meta: { requiresAuth: true, roles: ["Professional"] } },
+  { path: "/agent-workspace", name: "AgentWorkspace", component: AgentWorkspace, meta: { requiresAuth: true, roles: ["User", "Professional", "Admin"] } },
+  { path: "/internal-provider-setup", name: "ProviderKeySetup", component: ProviderKeySetup, meta: { requiresAuth: true, roles: ["Admin"] } },
   { path: "/structure-predictor", name: "StructurePredictor", component: StructureParameterPage },
   { path: "/virtual-plot-designer", name: "VirtualPlotDesigner", component: VirtualPlotDesignerPage },
   { path: "/shap-visualizer", name: "ShapVisualizer", component: PlaceholderPage, props: { title: "模型解释图" } },
@@ -71,6 +77,9 @@ router.beforeEach((to) => {
   auth.restoreSession();
   if (!to.meta?.requiresAuth) return true;
   if (!auth.isAuthenticated.value) return { path: '/login', query: { redirect: to.fullPath } };
+  if (auth.isProfessional.value && auth.passwordChangeRequired.value && to.name !== 'ProfessionalPassword') {
+    return { path: '/professional/change-password' };
+  }
   const roles = to.meta.roles || [];
   if (!auth.hasRole(roles)) return auth.isAdmin.value ? { path: '/usermanage' } : { path: '/userinfo', query: { denied: 'admin' } };
   return true;

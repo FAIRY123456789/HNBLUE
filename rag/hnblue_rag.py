@@ -22,6 +22,7 @@ SUPPORTED_EXTENSIONS = {".md", ".txt", ".csv", ".json"}
 ATOMIC_EXTENSIONS = {".csv", ".json", ".txt"}
 EXCLUDED_PATHS = {
     "00_overview/all_in_one_hnblue_kb_v2.md": "duplicates the individual source documents",
+    "70_anythingllm_upload/upload_instructions.md": "obsolete vendor-specific upload instructions",
 }
 DOMAIN_ALIASES = {
     "可解释": ("SHAP", "特征贡献", "解释方法"),

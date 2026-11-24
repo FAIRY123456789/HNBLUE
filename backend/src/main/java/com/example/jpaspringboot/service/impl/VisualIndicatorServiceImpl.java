@@ -23,6 +23,7 @@ import com.example.jpaspringboot.service.VisualIndicatorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -56,6 +57,7 @@ public class VisualIndicatorServiceImpl implements VisualIndicatorService {
      */
     @Override
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public VisualIndicatorData updateIndicatorValue(String regionName, String indicatorKey, double value) {
         // 根据地区名称、指标键值和年份查询唯一记录
         VisualIndicatorData data = repository.findByRegionNameAndIndicatorKeyAndYear(regionName, indicatorKey, CURRENT_YEAR);

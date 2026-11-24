@@ -153,11 +153,15 @@ async function login() {
       username,
       password: credentials.password,
     });
-    if (payload.userType !== 'Admin') await auth.refreshUser().catch(() => null);
+    if (payload.userType === 'User') await auth.refreshUser().catch(() => null);
     showMessage('登录成功，正在进入账户页面。', 'success');
     resetForm();
     const redirect = router.currentRoute.value.query.redirect;
-    const fallback = payload.userType === 'Admin' ? '/usermanage' : '/userinfo';
+    const fallback = payload.userType === 'Admin'
+      ? '/professional-admin'
+      : payload.userType === 'Professional'
+        ? (payload.passwordChangeRequired ? '/professional/change-password' : '/agent-workspace')
+        : '/userinfo';
     setTimeout(() => router.push(typeof redirect === 'string' ? redirect : fallback), 300);
   } catch (error) {
     if ((error.response?.status || error.status) === 429) {

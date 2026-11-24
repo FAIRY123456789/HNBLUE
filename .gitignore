@@ -122,3 +122,17 @@ sql/seed/*.sql
 # Accidental browser-console paste artifacts.
 i.getAttribute*
 x.textContent*
+
+# Local Agent workspaces and checkpoints
+**/.runtime/
+**/.pytest_cache/
+**/__pycache__/
+**/*.egg-info/
+**/node_modules/
+agent_service/artifacts/
+agent_service/evidence/
+*.sqlite
+*.sqlite3
+*.pkl
+*.safetensors
+*.gguf

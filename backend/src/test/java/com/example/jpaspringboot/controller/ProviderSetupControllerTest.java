@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -52,8 +53,16 @@ class ProviderSetupControllerTest {
     }
 
     @Test
-    void exposesOnlyMinimalUnlockedStatusWithoutLogin() throws Exception {
-        String response = mockMvc.perform(get("/api/internal/provider-setup"))
+    void exposesOnlyMinimalUnlockedStatusToAdmin() throws Exception {
+        mockMvc.perform(get("/api/internal/provider-setup"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/internal/provider-setup")
+                        .with(user("contract-test-professional").roles("PROFESSIONAL")))
+                .andExpect(status().isForbidden());
+
+        String response = mockMvc.perform(get("/api/internal/provider-setup")
+                        .with(user("contract-test-admin").roles("ADMIN")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.locked").value(false))
                 .andExpect(jsonPath("$.encryptionReady").value(true))
@@ -66,8 +75,9 @@ class ProviderSetupControllerTest {
     }
 
     @Test
-    void storesCiphertextOnceWithoutLoginAndNeverReturnsSecretMetadata() throws Exception {
+    void storesCiphertextOnceAsAdminAndNeverReturnsSecretMetadata() throws Exception {
         String response = mockMvc.perform(post("/api/internal/provider-setup")
+                        .with(user("contract-test-admin").roles("ADMIN"))
                         .header("Origin", "http://127.0.0.1:18080")
                         .with(request -> { request.setRemoteAddr("127.0.0.1"); return request; })
                         .contentType(MediaType.APPLICATION_JSON)
@@ -91,6 +101,7 @@ class ProviderSetupControllerTest {
         apiSecretService.saveDeepSeekApiKeyOnce(TEST_KEY);
 
         mockMvc.perform(post("/api/internal/provider-setup")
+                        .with(user("contract-test-admin").roles("ADMIN"))
                         .with(request -> { request.setRemoteAddr("127.0.0.1"); return request; })
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"apiKey\":\"" + REPLACEMENT_KEY + "\"}"))
@@ -105,9 +116,11 @@ class ProviderSetupControllerTest {
 
     @Test
     void offersNoDeleteOrLegacyMutationRoute() throws Exception {
-        mockMvc.perform(delete("/api/internal/provider-setup"))
+        mockMvc.perform(delete("/api/internal/provider-setup")
+                        .with(user("contract-test-admin").roles("ADMIN")))
                 .andExpect(status().isMethodNotAllowed());
         mockMvc.perform(put("/admin/integrations/deepseek")
+                        .with(user("contract-test-admin").roles("ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"apiKey\":\"" + TEST_KEY + "\"}"))
                 .andExpect(status().isNotFound());
@@ -117,6 +130,7 @@ class ProviderSetupControllerTest {
     @Test
     void rejectsSubmissionOverPublicPlainHttp() throws Exception {
         mockMvc.perform(post("/api/internal/provider-setup")
+                        .with(user("contract-test-admin").roles("ADMIN"))
                         .header("Origin", "http://127.0.0.1:18080")
                         .header("X-Forwarded-Proto", "http")
                         .header("X-Real-IP", "203.0.113.25")

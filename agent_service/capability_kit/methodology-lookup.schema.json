@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hnblue://capability/bluecarbon.methodology.lookup/v1",
+  "title": "bluecarbon.methodology.lookup",
+  "description": "Read-only methodology retrieval over the existing local evidence index.",
+  "x-hnblue": {"toolId": "bluecarbon.methodology.lookup", "toolVersion": "1.0.0", "roles": ["PROFESSIONAL", "ADMIN"], "dataScope": "local-public-methodology-evidence", "visibility": "PUBLIC", "readOnly": true, "timeoutMs": 5000, "errorCodes": ["insufficient_evidence", "tool_forbidden"], "sourceIdentity": "HNBLUE_RAG_3_0_LOCAL_INDEX", "sourceContract": {"datasetIdentity": "HNBLUE_RAG_3_0_LOCAL_INDEX", "requiredFields": ["sourceId", "title", "datasetIdentity", "visibility", "recordId"]}},
+  "type": "object",
+  "required": ["topic"],
+  "properties": {"topic": {"type": "string", "minLength": 1, "maxLength": 1000}},
+  "additionalProperties": false
+}

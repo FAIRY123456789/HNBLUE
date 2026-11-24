@@ -32,7 +32,7 @@ API端点说明：
 """
 from flask import Flask, request, Response, jsonify, send_from_directory
 import json
-from predict_service import MODEL_MODE, predict_carbon_stock, batch_predict_carbon_stock, sensitivity_analysis, save_sensitivity_plot, explain_sensitivity
+from predict_service import MODEL_MODE, MODEL_SHA256, predict_carbon_stock, batch_predict_carbon_stock, sensitivity_analysis, save_sensitivity_plot, explain_sensitivity
 from flask_cors import CORS  # 引入 CORS 支持
 import os
 import sys
@@ -63,7 +63,13 @@ def predict():
         result = predict_carbon_stock(input_data)
 
         # 构造 JSON 字符串，并手动设置正确的 Content-Type
-        response_data = json.dumps({"prediction": result, "modelMode": MODEL_MODE})
+        response_data = json.dumps({
+            "prediction": result,
+            "modelMode": MODEL_MODE,
+            "modelSha256": MODEL_SHA256,
+            "target": "m.so",
+            "interpretation": "raw above-ground dry biomass model output; not validated per-area carbon stock",
+        })
         return Response(response=response_data, status=200, mimetype="application/json")
 
     except Exception as e:
@@ -79,7 +85,13 @@ def batch_predict():
             raise ValueError("请提交样地数组（list），而不是单个样地对象。")
 
         results = batch_predict_carbon_stock(sample_list)
-        return jsonify({"predictions": results, "modelMode": MODEL_MODE})
+        return jsonify({
+            "predictions": results,
+            "modelMode": MODEL_MODE,
+            "modelSha256": MODEL_SHA256,
+            "target": "m.so",
+            "interpretation": "raw above-ground dry biomass model output; not validated per-area carbon stock",
+        })
 
     except Exception as e:
         error_data = json.dumps({"error": str(e)})
@@ -156,7 +168,13 @@ def sensitivity_explain():
 @app.route("/ping", methods=["GET"])
 def ping():
     print("/ping 路由被调用了！")
-    return jsonify({"msg": "pong", "modelMode": MODEL_MODE})
+    return jsonify({
+        "msg": "pong",
+        "modelMode": MODEL_MODE,
+        "modelSha256": MODEL_SHA256,
+        "target": "m.so",
+        "networkBinding": os.getenv("HNBLUE_MODEL_HOST", "127.0.0.1"),
+    })
 
 if __name__ == "__main__":
     app.run(

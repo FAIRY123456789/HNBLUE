@@ -75,7 +75,7 @@ public class AdministratorUserRelationServiceImpl implements AdministratorUserRe
         }
 
         // 验证用户实体存在性
-        User user = userRepository.findById(Long.valueOf(userId))
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id " + userId));
 
         // 构建复合主键并删除关系记录
@@ -107,7 +107,7 @@ public class AdministratorUserRelationServiceImpl implements AdministratorUserRe
         }
 
         // 验证用户实体存在性
-        User user = userRepository.findById(Long.valueOf(userId))
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id " + userId));
 
         // 创建新的管理关系实体

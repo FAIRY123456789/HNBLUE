@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hnblue://capability/bluecarbon.region.metrics.read/v1",
+  "title": "bluecarbon.region.metrics.read",
+  "description": "Read-only adapter for GET /api/devisual/{regionName}; phase-two fallback is explicitly synthetic.",
+  "x-hnblue": {"toolId": "bluecarbon.region.metrics.read", "toolVersion": "1.0.0", "roles": ["PROFESSIONAL", "ADMIN"], "dataScope": "whitelisted-hainan-region", "visibility": "PUBLIC", "readOnly": true, "timeoutMs": 5000, "errorCodes": ["insufficient_evidence", "tool_forbidden", "upstream_unavailable"], "sourceIdentity": "HNBLUE_JAVA_DEVISUAL_CURRENT_DATABASE", "sourceContract": {"datasetIdentity": "HNBLUE_JAVA_DEVISUAL_CURRENT_DATABASE", "syntheticDatasetIdentity": "HNBLUE_SYNTHETIC_MONITORING_FIXTURE_V1", "requiredFields": ["sourceId", "title", "datasetIdentity", "visibility", "recordId", "synthetic"]}, "units": "returned by source fields; synthetic fixture uses synthetic-index"},
+  "type": "object",
+  "required": ["region"],
+  "properties": {"region": {"type": "string", "enum": ["琼海", "文昌", "万宁", "海口", "三亚"]}},
+  "additionalProperties": false
+}

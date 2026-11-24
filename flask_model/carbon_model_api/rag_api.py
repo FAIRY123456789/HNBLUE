@@ -18,6 +18,10 @@ def create_rag_blueprint(project_root: Path) -> Blueprint:
     source_root = Path(
         os.getenv("HNBLUE_RAG_SOURCE", str(project_root / "rag" / "examples" / "knowledge"))
     ).expanduser().resolve()
+    dataset_identity = os.getenv("HNBLUE_RAG_DATASET_IDENTITY", "HNBLUE_RAG_3_0_LOCAL_INDEX").strip()
+    access_status = os.getenv("HNBLUE_RAG_ACCESS_STATUS", "PUBLIC").strip()
+    authorization_status = os.getenv("HNBLUE_RAG_AUTHORIZATION_STATUS", "TEST_ONLY").strip()
+    synthetic = os.getenv("HNBLUE_RAG_SYNTHETIC", "true").strip().lower() in {"1", "true", "yes", "on"}
 
     index = None
     manifest = {}
@@ -42,6 +46,18 @@ def create_rag_blueprint(project_root: Path) -> Blueprint:
             raise ValueError("topK 必须是整数。") from exc
         return query, max(1, min(top_k, 10))
 
+    def decorate_sources(sources: list[dict]) -> list[dict]:
+        return [
+            {
+                **item,
+                "datasetIdentity": dataset_identity,
+                "accessStatus": access_status,
+                "authorizationStatus": authorization_status,
+                "synthetic": synthetic,
+            }
+            for item in sources
+        ]
+
     @blueprint.get("/api/rag/status")
     def status():
         ready = index is not None
@@ -52,6 +68,10 @@ def create_rag_blueprint(project_root: Path) -> Blueprint:
             "chunks": len(index.chunks) if ready else 0,
             "sourceFiles": int(manifest.get("source_files", 0)),
             "indexSha256": manifest.get("chunks_sha256", ""),
+            "datasetIdentity": dataset_identity,
+            "accessStatus": access_status,
+            "authorizationStatus": authorization_status,
+            "synthetic": synthetic,
         }
         if not ready:
             payload["message"] = "RAG index is unavailable"
@@ -65,7 +85,13 @@ def create_rag_blueprint(project_root: Path) -> Blueprint:
         try:
             query, top_k = parse_request()
             results = index.search(query, top_k=top_k, mode="hybrid", diversify=True)
-            return jsonify({"ok": True, "provider": "hnblue-local-hybrid-rag", "results": results})
+            return jsonify({
+                "ok": True,
+                "provider": "hnblue-local-hybrid-rag",
+                "datasetIdentity": dataset_identity,
+                "synthetic": synthetic,
+                "results": results,
+            })
         except ValueError as exc:
             return jsonify({"ok": False, "message": str(exc)}), 400
 
@@ -80,7 +106,7 @@ def create_rag_blueprint(project_root: Path) -> Blueprint:
                 "ok": True,
                 "provider": "hnblue-local-hybrid-rag",
                 "answer": result["answer"],
-                "sources": result["sources"],
+                "sources": decorate_sources(result["sources"]),
                 "evidenceStatus": result["evidenceStatus"],
                 "metrics": {"retrieval": "hybrid-rrf", "returnedSources": len(result["sources"])},
             })
@@ -98,6 +124,7 @@ def create_rag_blueprint(project_root: Path) -> Blueprint:
                 "ok": True,
                 "provider": "hnblue-local-hybrid-rag-3.0",
                 **result,
+                "sources": decorate_sources(result["sources"]),
                 "metrics": {"retrieval": "hybrid-rrf", "returnedSources": len(result["sources"])},
             })
         except ValueError as exc:

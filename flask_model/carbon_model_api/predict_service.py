@@ -30,7 +30,9 @@
 • 可视化图表静态资源URL
 • 生态学解释文本报告
 """
+import hashlib
 import joblib
+import math
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
@@ -46,8 +48,50 @@ from pathlib import Path
 MODEL_PATH = Path(
     os.getenv("HNBLUE_MODEL_PATH", str(Path(__file__).resolve().parent / "catboost_pipeline.pkl"))
 ).expanduser().resolve()
+EXPECTED_MODEL_SHA256 = os.getenv("HNBLUE_MODEL_SHA256", "").strip().lower()
+MODEL_SHA256 = hashlib.sha256(MODEL_PATH.read_bytes()).hexdigest() if MODEL_PATH.exists() else ""
+if MODEL_PATH.exists() and not EXPECTED_MODEL_SHA256:
+    raise RuntimeError("HNBLUE_MODEL_SHA256 is required before loading a model artifact")
+if MODEL_PATH.exists() and MODEL_SHA256 != EXPECTED_MODEL_SHA256:
+    raise RuntimeError("CatBoost model SHA-256 mismatch")
 model = joblib.load(MODEL_PATH) if MODEL_PATH.exists() else None
-MODEL_MODE = "private-artifact" if model is not None else "synthetic-demo"
+MODEL_MODE = "authorized-official-artifact" if model is not None else "synthetic-demo"
+
+
+def _number(input_dict, key, default=None):
+    raw = input_dict.get(key, default)
+    if raw is None:
+        raise ValueError(f"缺少必填字段：{key}")
+    value = float(raw)
+    if not math.isfinite(value):
+        raise ValueError(f"字段 {key} 必须是有限数值")
+    return value
+
+
+def _sample(input_dict):
+    sample = {
+        'latitude': _number(input_dict, 'latitude', 19.0),
+        'longitude': _number(input_dict, 'longitude', 109.5),
+        'mat': _number(input_dict, 'mat', 25.5),
+        'map': _number(input_dict, 'map', 1800),
+        'age': _number(input_dict, 'age', 25),
+        'h.t': _number(input_dict, 'treeHeight'),
+        'd.bh': _number(input_dict, 'dbh'),
+        'a.cp': _number(input_dict, 'canopy'),
+        'c.d': _number(input_dict, 'c.d', 0.7),
+        'vegetation': str(input_dict.get('vegetation', 'mangrove')).strip(),
+        'growingcondition': str(input_dict.get('growingcondition', 'natural')).strip(),
+        'pft': str(input_dict.get('pft', 'broadleaf')).strip(),
+    }
+    if not -90 <= sample['latitude'] <= 90 or not -180 <= sample['longitude'] <= 180:
+        raise ValueError("latitude/longitude 超出地理坐标范围")
+    if sample['map'] < 0 or sample['age'] < 0 or sample['c.d'] < 0:
+        raise ValueError("map、age 和 c.d 不能为负数")
+    if sample['h.t'] <= 0 or sample['d.bh'] <= 0 or sample['a.cp'] <= 0:
+        raise ValueError("treeHeight、dbh 和 canopy 必须大于 0")
+    if not sample['vegetation'] or not sample['growingcondition'] or not sample['pft']:
+        raise ValueError("分类特征不能为空")
+    return sample
 
 
 def _predict_frame(frame: pd.DataFrame):
@@ -64,47 +108,21 @@ def _predict_frame(frame: pd.DataFrame):
 # 单样本预测
 def predict_carbon_stock(input_dict):
     try:
-        sample = {
-            'latitude': input_dict.get('latitude', 19.0),
-            'longitude': input_dict.get('longitude', 109.5),
-            'mat': input_dict.get('mat', 25.5),
-            'map': input_dict.get('map', 1800),
-            'age': input_dict.get('age', 25),
-            'h.t': float(input_dict['treeHeight']),
-            'd.bh': float(input_dict['dbh']),
-            'a.cp': float(input_dict['canopy']),
-            'c.d': input_dict.get('c.d', 0.7),
-            'vegetation': input_dict.get('vegetation', 'mangrove'),
-            'growingcondition': input_dict.get('growingcondition', 'natural'),
-            'pft': input_dict.get('pft', 'broadleaf')
-        }
+        sample = _sample(input_dict)
         X = pd.DataFrame([sample])
         y_pred = _predict_frame(X)[0]
         return round(float(y_pred), 3)
     except Exception as e:
         raise ValueError(f"预测失败：{e}")
-    finally:
-        print("收到结构参数：", input_dict)
 
 # 批量样地预测
 def batch_predict_carbon_stock(sample_list):
     try:
-        records = []
-        for i, item in enumerate(sample_list):
-            records.append({
-                'latitude': item.get('latitude', 19.0),
-                'longitude': item.get('longitude', 109.5),
-                'mat': item.get('mat', 25.5),
-                'map': item.get('map', 1800),
-                'age': item.get('age', 25),
-                'h.t': float(item['treeHeight']),
-                'd.bh': float(item['dbh']),
-                'a.cp': float(item['canopy']),
-                'c.d': item.get('c.d', 0.7),
-                'vegetation': item.get('vegetation', 'mangrove'),
-                'growingcondition': item.get('growingcondition', 'natural'),
-                'pft': item.get('pft', 'broadleaf')
-            })
+        if not isinstance(sample_list, list) or not sample_list:
+            raise ValueError("批量预测必须包含至少一个样本")
+        if len(sample_list) > 100:
+            raise ValueError("批量预测最多接受 100 个样本")
+        records = [_sample(item) for item in sample_list]
         df = pd.DataFrame(records)
         y_preds = _predict_frame(df)
         return [round(float(v), 3) for v in y_preds]

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hnblue://capability/bluecarbon.knowledge.search/v1",
+  "title": "bluecarbon.knowledge.search",
+  "description": "Read-only search over HNBLUE_RAG_3_0_LOCAL_INDEX with injection and evidence gates.",
+  "x-hnblue": {"toolId": "bluecarbon.knowledge.search", "toolVersion": "1.0.0", "roles": ["PUBLIC", "PROFESSIONAL", "ADMIN"], "dataScope": "local-public-rag-index", "visibility": "PUBLIC", "readOnly": true, "timeoutMs": 5000, "errorCodes": ["prompt_injection", "insufficient_evidence", "tool_forbidden"], "sourceIdentity": "HNBLUE_RAG_3_0_LOCAL_INDEX", "sourceContract": {"datasetIdentity": "HNBLUE_RAG_3_0_LOCAL_INDEX", "requiredFields": ["sourceId", "title", "datasetIdentity", "visibility", "recordId"]}},
+  "type": "object",
+  "required": ["query"],
+  "properties": {"query": {"type": "string", "minLength": 1, "maxLength": 4000}, "topK": {"type": "integer", "minimum": 1, "maximum": 6}},
+  "additionalProperties": false
+}

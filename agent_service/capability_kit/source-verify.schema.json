@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hnblue://capability/bluecarbon.source.verify/v1",
+  "title": "bluecarbon.source.verify",
+  "description": "Verify local source identifiers; arbitrary URL fetching is intentionally forbidden.",
+  "x-hnblue": {"toolId": "bluecarbon.source.verify", "toolVersion": "1.0.0", "roles": ["PROFESSIONAL", "ADMIN"], "dataScope": "provided-source-identifiers-only", "visibility": "PUBLIC", "readOnly": true, "timeoutMs": 5000, "errorCodes": ["insufficient_evidence", "tool_forbidden"], "sourceIdentity": "HNBLUE_SOURCE_REGISTRY", "sourceContract": {"datasetIdentity": "HNBLUE_SOURCE_REGISTRY", "arbitraryUrlFetch": false}},
+  "type": "object",
+  "required": ["sourceIds"],
+  "properties": {"sourceIds": {"type": "array", "maxItems": 12, "items": {"type": "string"}}},
+  "additionalProperties": false
+}

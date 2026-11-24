@@ -88,7 +88,12 @@ function isStrongPassword(value) {
 
 const avatarText = computed(() => (form.name || 'H').slice(0, 1).toUpperCase());
 const avatarStyle = computed(() => form.avatar ? { backgroundImage: `url(${normalizeAvatar(form.avatar)})`, color: 'transparent' } : {});
-const roleDisplay = computed(() => (String(form.role || '').toLowerCase().includes('admin') ? '管理员' : '普通用户'));
+const roleDisplay = computed(() => {
+  const role = String(form.role || auth.role.value || '').toLowerCase();
+  if (role.includes('admin')) return '管理员';
+  if (role.includes('professional')) return '专业用户';
+  return '公众用户';
+});
 
 function show(message, type = 'info') { toast.message = message; toast.type = type; toast.visible = true; }
 function normalizeAvatar(value) { return !value ? '' : (String(value).startsWith('data:') ? value : `data:image/png;base64,${value}`); }

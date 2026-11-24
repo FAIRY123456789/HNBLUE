@@ -64,12 +64,12 @@ public class UserServiceImplTest {
      */
     @Test
     public void deleteUserById_ExistingUser_Success() {
-        doNothing().when(userRepository).deleteById(1L);
+        doNothing().when(userRepository).deleteById(1);
 
         boolean result = userServiceImpl.deleteUserById(1L);
 
         assertTrue(result);
-        verify(userRepository, times(1)).deleteById(1L);
+        verify(userRepository, times(1)).deleteById(1);
     }
 
     /**
@@ -83,13 +83,13 @@ public class UserServiceImplTest {
      */
     @Test
     public void deleteUserByIds_MultipleUsers_Success() {
-        doNothing().when(userRepository).deleteById(anyLong());
+        doNothing().when(userRepository).deleteById(anyInt());
 
         List<Long> ids = Arrays.asList(1L, 2L, 3L);
         boolean result = userServiceImpl.deleteUserByIds(ids);
 
         assertTrue(result);
-        verify(userRepository, times(ids.size())).deleteById(anyLong());
+        verify(userRepository, times(ids.size())).deleteById(anyInt());
     }
 
     /**

@@ -44,6 +44,8 @@ class RagApiTest(unittest.TestCase):
         self.assertEqual(manifest["chunks"], payload["chunks"])
         self.assertEqual(manifest["source_files"], payload["sourceFiles"])
         self.assertEqual(64, len(payload["indexSha256"]))
+        self.assertEqual("HNBLUE_RAG_3_0_LOCAL_INDEX", payload["datasetIdentity"])
+        self.assertTrue(payload["synthetic"])
 
     def test_answer_returns_sources(self):
         response = self.client.post("/api/rag/answer", json={"message": "CatBoost 在红树林碳储量评估中有什么作用？"})

@@ -1,6 +1,7 @@
 package com.example.jpaspringboot.service;
 
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,21 @@ public class V2DataService {
     private static final String DATA_GOVERNANCE_TASK_TABLE = "t_data_governance_task";
 
     private final JdbcTemplate jdbcTemplate;
+
+    @Value("${hnblue.data.mode:SYNTHETIC_TEST}")
+    private String dataMode;
+
+    @Value("${hnblue.data.dataset-identity:HNBLUE_JAVA_V2_CURRENT_DATABASE}")
+    private String datasetIdentity;
+
+    @Value("${hnblue.data.review-status:not-reviewed}")
+    private String reviewStatus;
+
+    @Value("${hnblue.data.access-status:test-only}")
+    private String accessStatus;
+
+    @Value("${hnblue.data.government-reviewed:false}")
+    private boolean governmentReviewed;
 
     public V2DataService(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -109,10 +125,11 @@ public class V2DataService {
         filters = safeFilters(filters);
         Page page = page(filters);
         SqlParts sql = new SqlParts();
-        sql.select = "select c.cover_id, c.region_id, r.region_code, r.region_name, r.region_full_name, " +
+        sql.select = "select c.cover_id, c.region_id, r.region_code, r.region_name, " +
+                "concat_ws('/', nullif(r.province, ''), nullif(r.city, ''), nullif(r.county, ''), nullif(r.region_name, '')) as region_full_name, " +
                 "c.metric_year as year, c.mangrove_area_ha as area_value, 'ha' as unit, c.cover_ratio, " +
                 "c.classification_method as method, c.overall_accuracy, c.kappa, " +
-                "c.qc_flag_id as quality_flag, s.source_code, s.source_name, c.created_at " +
+                "c.qc_flag_id as quality_flag, s.source_code, s.source_name, s.is_simulated, c.created_at " +
                 "from " + MANGROVE_COVER_TABLE + " c " +
                 "left join " + REGION_TABLE + " r on r.region_id = c.region_id " +
                 "left join " + DATA_SOURCE_TABLE + " s on s.source_id = c.source_id where 1=1";
@@ -121,7 +138,7 @@ public class V2DataService {
         addEquals(sql, "s.source_code", filters.get("source_code"));
         String keyword = trim(filters.get("keyword"));
         if (keyword != null) {
-            sql.where.add("(r.region_name like ? or r.region_full_name like ? or s.source_code like ? or c.classification_method like ?)");
+            sql.where.add("(r.region_name like ? or concat_ws('/', r.province, r.city, r.county, r.region_name) like ? or s.source_code like ? or c.classification_method like ?)");
             addLike(sql, keyword, 4);
         }
         sql.order = " order by c.metric_year desc, r.region_name asc, c.cover_id desc";
@@ -137,25 +154,27 @@ public class V2DataService {
         filters = safeFilters(filters);
         Page page = page(filters);
         SqlParts sql = new SqlParts();
-        sql.select = "select m.metric_id, m.region_id, r.region_code, r.region_name, r.region_full_name, " +
-                "m.indicator_code, coalesce(m.indicator_name, d.indicator_name_cn) as indicator_name, " +
+        sql.select = "select m.metric_id, m.region_id, r.region_code, r.region_name, " +
+                "concat_ws('/', nullif(r.province, ''), nullif(r.city, ''), nullif(r.county, ''), nullif(r.region_name, '')) as region_full_name, " +
+                "m.indicator_code, d.indicator_name_cn as indicator_name, " +
                 "d.indicator_domain as metric_category, m.metric_year as year, m.metric_month, m.metric_date, " +
-                "m.value, m.unit, m.stat_method, s.source_code, s.source_name, m.quality_level as quality_flag, " +
-                "m.is_proxy, m.is_simulated, coalesce(m.notes, m.method_note, d.description) as description, " +
-                "m.method_note, m.source_record_id, m.created_at " +
+                "m.value, m.unit, m.stat_method, s.source_code, s.source_name, q.flag_code as quality_flag, " +
+                "cast(null as unsigned) as is_proxy, m.is_simulated, coalesce(q.description, d.description) as description, " +
+                "d.method_note, m.product_id as source_record_id, m.created_at " +
                 "from " + REGION_METRIC_TABLE + " m " +
                 "left join " + REGION_TABLE + " r on r.region_id = m.region_id " +
                 "left join " + DATA_SOURCE_TABLE + " s on s.source_id = m.source_id " +
+                "left join hainan_blue_carbon_core.t_quality_flag q on q.qc_flag_id = m.qc_flag_id " +
                 "left join " + INDICATOR_DICTIONARY_TABLE + " d on d.indicator_code = m.indicator_code where 1=1";
         addRegion(sql, "m.region_id", "r.region_name", filters);
         addEquals(sql, "d.indicator_domain", filters.get("metric_category"));
         addEquals(sql, "m.indicator_code", filters.get("indicator_code"));
         addIntEquals(sql, "m.metric_year", filters.get("year"));
         addEquals(sql, "s.source_code", filters.get("source_code"));
-        addEquals(sql, "m.quality_level", filters.get("quality_flag"));
+        addEquals(sql, "q.flag_code", filters.get("quality_flag"));
         String keyword = trim(filters.get("keyword"));
         if (keyword != null) {
-            sql.where.add("(r.region_name like ? or m.indicator_code like ? or m.indicator_name like ? or d.indicator_name_cn like ? or m.notes like ?)");
+            sql.where.add("(r.region_name like ? or m.indicator_code like ? or d.indicator_name_cn like ? or d.indicator_name_en like ? or q.description like ?)");
             addLike(sql, keyword, 5);
         }
         sql.order = " order by m.metric_year desc, r.region_name asc, m.indicator_code asc, m.metric_id desc";
@@ -171,14 +190,18 @@ public class V2DataService {
         filters = safeFilters(filters);
         Page page = page(filters);
         SqlParts sql = new SqlParts();
-        sql.select = "select l.record_id, l.region_id, r.region_code, r.region_name, r.region_full_name, " +
+        sql.select = "select l.record_id, l.region_id, r.region_code, r.region_name, " +
+                "concat_ws('/', nullif(r.province, ''), nullif(r.city, ''), nullif(r.county, ''), nullif(r.region_name, '')) as region_full_name, " +
                 "l.site_name, l.latitude, l.longitude, l.ecosystem_type, l.carbon_pool, " +
-                "case when l.is_simulated = 1 then 'MODEL_OR_SCENARIO' when l.is_proxy = 1 then 'PROXY' else 'OBSERVATION_OR_LITERATURE' end as data_type, " +
-                "l.value_mg_ha, l.value, coalesce(l.unit, 'Mg/ha') as unit, l.depth_top_cm, l.depth_bottom_cm, " +
-                "l.method_note as method_type, l.source_record_id, l.is_proxy, l.is_simulated, l.indicator_code, l.indicator_name, " +
-                "l.quality_level, l.notes as evidence_text, s.source_code, s.source_name, s.citation_text as citation, s.source_url as url, l.created_at " +
+                "case when coalesce(s.is_simulated, 0) = 1 then 'MODEL_OR_SCENARIO' else 'OBSERVATION_OR_LITERATURE' end as data_type, " +
+                "l.value_mg_ha, l.value_mg_ha as value, 'Mg/ha' as unit, l.depth_top_cm, l.depth_bottom_cm, " +
+                "l.method_note as method_type, l.reference_id as source_record_id, cast(null as unsigned) as is_proxy, " +
+                "coalesce(s.is_simulated, 0) as is_simulated, cast(null as char) as indicator_code, cast(null as char) as indicator_name, " +
+                "cast(null as char) as quality_level, l.method_note as evidence_text, s.source_code, s.source_name, " +
+                "coalesce(ref.citation_text, s.citation_text) as citation, coalesce(ref.url, s.source_url) as url, l.created_at " +
                 "from " + LITERATURE_CARBON_TABLE + " l " +
                 "left join " + REGION_TABLE + " r on r.region_id = l.region_id " +
+                "left join hainan_blue_carbon_intl.t_literature_reference ref on ref.reference_id = l.reference_id " +
                 "left join " + DATA_SOURCE_TABLE + " s on s.source_id = l.source_id where 1=1";
         addRegion(sql, "l.region_id", "r.region_name", filters);
         addEquals(sql, "l.carbon_pool", filters.get("carbon_pool"));
@@ -187,14 +210,12 @@ public class V2DataService {
         if (dataType != null) {
             String normalized = dataType.toLowerCase(Locale.ROOT);
             if (normalized.contains("model") || normalized.contains("scenario") || normalized.contains("simulated")) {
-                sql.where.add("l.is_simulated = ?");
+                sql.where.add("coalesce(s.is_simulated, 0) = ?");
                 sql.params.add(1);
             } else if (normalized.contains("proxy")) {
-                sql.where.add("l.is_proxy = ?");
-                sql.params.add(1);
+                sql.where.add("1 = 0");
             } else if (normalized.contains("observ") || normalized.contains("literature")) {
-                sql.where.add("l.is_simulated = ? and l.is_proxy = ?");
-                sql.params.add(0);
+                sql.where.add("coalesce(s.is_simulated, 0) = ?");
                 sql.params.add(0);
             }
         }
@@ -205,7 +226,7 @@ public class V2DataService {
         }
         String keyword = trim(filters.get("keyword"));
         if (keyword != null) {
-            sql.where.add("(r.region_name like ? or l.site_name like ? or l.method_note like ? or l.notes like ? or s.citation_text like ?)");
+            sql.where.add("(r.region_name like ? or l.site_name like ? or l.method_note like ? or ref.citation_text like ? or s.citation_text like ?)");
             addLike(sql, keyword, 5);
         }
         sql.order = " order by l.created_at desc, l.record_id desc";
@@ -222,7 +243,9 @@ public class V2DataService {
         Map<String, Object> data = new LinkedHashMap<>();
         try {
             List<Map<String, Object>> regions = jdbcTemplate.queryForList(
-                    "select region_id, region_code, region_name, region_full_name, region_level, region_type, " +
+                    "select region_id, region_code, region_name, " +
+                            "concat_ws('/', nullif(province, ''), nullif(city, ''), nullif(county, ''), nullif(region_name, '')) as region_full_name, " +
+                            "region_level, ecosystem_type as region_type, " +
                             "province, city, county, ecosystem_type, centroid_lat, centroid_lon, area_ha, protection_status, data_scope, remark " +
                             "from " + REGION_TABLE + " where cast(region_id as char) = ? or region_code = ? limit 1",
                     regionId, regionId
@@ -369,10 +392,15 @@ public class V2DataService {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("success", true);
         payload.put("message", message);
-        payload.put("meta", Map.of(
-                "api_version", "v2",
-                "generated_at", OffsetDateTime.now().toString()
-        ));
+        Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put("api_version", "v2");
+        meta.put("generated_at", OffsetDateTime.now().toString());
+        meta.put("data_mode", dataMode);
+        meta.put("dataset_identity", datasetIdentity);
+        meta.put("review_status", reviewStatus);
+        meta.put("access_status", accessStatus);
+        meta.put("government_reviewed", governmentReviewed);
+        payload.put("meta", meta);
         return payload;
     }
 

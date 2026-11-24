@@ -34,7 +34,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Integer> {
 
     List<User> findByIdIn(List<Integer> ids);
 
@@ -52,6 +52,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     User findByEmail(String email);
 
     boolean existsByName(String name);
+
+    boolean existsByNameIgnoreCase(String name);
 
     boolean existsByEmailIgnoreCase(String email);
 

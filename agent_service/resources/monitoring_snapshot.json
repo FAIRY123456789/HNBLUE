@@ -1,0 +1,15 @@
+{
+  "datasetIdentity": "HNBLUE_SYNTHETIC_MONITORING_FIXTURE_V1",
+  "notice": "仅用于阶段二隔离联调的合成数据，不代表真实监测、核证或政府统计结果。阶段三配置 HNBLUE_JAVA_BASE_URL 后必须由 Java 当前数据库替代。",
+  "units": {
+    "carbonStorage": "synthetic-index",
+    "carbonFlux": "synthetic-index-per-year"
+  },
+  "regions": {
+    "琼海": {"year": 2024, "carbonStorage": 100.0, "carbonFlux": 2.5},
+    "文昌": {"year": 2024, "carbonStorage": 110.0, "carbonFlux": 2.8},
+    "海口": {"year": 2024, "carbonStorage": 90.0, "carbonFlux": 2.1},
+    "三亚": {"year": 2024, "carbonStorage": 80.0, "carbonFlux": 1.9},
+    "万宁": {"year": 2024, "carbonStorage": 105.0, "carbonFlux": 2.6}
+  }
+}

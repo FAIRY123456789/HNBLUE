@@ -2,6 +2,8 @@
 
 [English](README.md) · 简体中文
 
+**2026-11-20 更新**　任务 API 增加 LangGraph 多角色分析与人工复核。[Agent 复核流程](docs/AGENT_REVIEW_WORKFLOW.md)
+
 HNBLUE 是面向海南蓝碳数据治理、区域专题展示、生物量模型推理、治理业务协同和私域知识问答的全栈研究与管理原型。
 
 系统由 Vue 3 前端、Spring Boot 应用与 Agent 编排层、MySQL、Redis、Flask/CatBoost 推理服务和 HNBLUE 自建混合 RAG 组成。DeepSeek 只作为通过检索与证据门控后的可选生成层；未配置生成模型时仍会返回可核验的证据摘录。

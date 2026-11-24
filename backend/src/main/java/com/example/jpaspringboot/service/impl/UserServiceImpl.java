@@ -145,7 +145,7 @@ public class UserServiceImpl implements UserService {
                               @RequestParam String password,
                               @RequestParam(required = false) String email,
                               @RequestParam(required = false) String birthdate) {
-        Optional<User> optionalUser = userRepository.findById((long) id);
+        Optional<User> optionalUser = userRepository.findById(id);
         if (optionalUser.isEmpty()) {
             System.out.println("???ID? " + id + " ???");
             return false;
@@ -260,7 +260,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean deleteUserById(Long id) {
         try {
-            userRepository.deleteById(id);
+            userRepository.deleteById(Math.toIntExact(id));
             return true;
         } catch (EmptyResultDataAccessException e) {
             System.out.println("未找到ID为 " + id + " 的用户");
@@ -433,7 +433,7 @@ public class UserServiceImpl implements UserService {
                 return false;
             }
 
-            Optional<User> userOptional = userRepository.findById(userId.longValue());
+            Optional<User> userOptional = userRepository.findById(userId);
             if (userOptional.isEmpty()) {
                 return false;
             }
@@ -465,7 +465,7 @@ public class UserServiceImpl implements UserService {
     }
 
     public String getUsernameById(Integer userId) {
-        Optional<User> userOptional = userRepository.findById(userId.longValue());
+        Optional<User> userOptional = userRepository.findById(userId);
         if (userOptional.isEmpty()) {
             return "";
         }
@@ -493,7 +493,7 @@ public class UserServiceImpl implements UserService {
      */
 
     public User findById(Long id) {
-        return userRepository.findById(id).orElse(null);
+        return id == null ? null : userRepository.findById(Math.toIntExact(id)).orElse(null);
     }
 
     public void markLastLogin(String username) {
@@ -517,7 +517,7 @@ public class UserServiceImpl implements UserService {
         }
 
         byte[] fileBytes = file.getBytes();
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("用户未找到"));
+        User user = userRepository.findById(Math.toIntExact(userId)).orElseThrow(() -> new RuntimeException("用户未找到"));
         user.setAvatar(fileBytes);
         userRepository.save(user);
 
@@ -568,7 +568,7 @@ public class UserServiceImpl implements UserService {
     }
 
     public boolean userExists(Long userId) {
-        return userRepository.existsById(userId);
+        return userId != null && userRepository.existsById(Math.toIntExact(userId));
     }
 
     private Admin getAdminFromToken(String token) {

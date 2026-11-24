@@ -33,4 +33,5 @@ public interface AdminRepository extends JpaRepository<Admin,Long> {
      * @return 匹配的管理员实体，未找到时返回null
      */
     Admin findByName(String name);
+    boolean existsByNameIgnoreCase(String name);
 }

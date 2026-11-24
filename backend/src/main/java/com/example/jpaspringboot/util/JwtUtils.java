@@ -26,6 +26,7 @@
 package com.example.jpaspringboot.util;
 
 import com.example.jpaspringboot.entity.User;
+import com.example.jpaspringboot.security.AccountRole;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 
@@ -100,6 +101,23 @@ public class JwtUtils {
                 .compact();
     }
 
+    public static String generateAccessToken(String username, AccountRole role, Long accountId,
+                                             long tokenVersion) {
+        Date now = new Date();
+        Date expiration = new Date(now.getTime() + EXPIRE_DURATION_MILLIS);
+        return Jwts.builder()
+                .setHeaderParam("typ", "JWT")
+                .setSubject(username)
+                .claim("userName", username)
+                .claim("accountId", accountId)
+                .claim("role", role.name())
+                .claim("tokenVersion", tokenVersion)
+                .setIssuedAt(now)
+                .setExpiration(expiration)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
     /**
      * 从JWT令牌中提取用户名
      *
@@ -107,8 +125,9 @@ public class JwtUtils {
      * @return 用户名主体
      */
     public static String getUsernameFromToken(String token) {
-        Claims claims = Jwts.parser()
+        Claims claims = Jwts.parserBuilder()
                 .setSigningKey(key)
+                .build()
                 .parseClaimsJws(token.replace("Bearer ", ""))
                 .getBody();
 
@@ -179,6 +198,13 @@ public class JwtUtils {
         return claims.get(claimKey);
     }
 
+    public static Long getOptionalLongClaim(String token, String claimKey) {
+        Object value = getClaimFromToken(token, claimKey);
+        if (value == null) return null;
+        if (value instanceof Number number) return number.longValue();
+        return Long.parseLong(value.toString());
+    }
+
     /**
      * 验证令牌是否已过期
      *
@@ -221,6 +247,8 @@ public class JwtUtils {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-        return claims.get("userName", String.class);  // 确保在生成token时已经设置了userName
+        String username = claims.get("userName", String.class);
+        if (username == null) username = claims.get("username", String.class);
+        return username == null ? claims.getSubject() : username;
     }
 }

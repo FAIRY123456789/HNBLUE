@@ -1,0 +1,24 @@
+{
+  "id": "hnblue-bluecarbon-readonly-lab",
+  "name": "HNBLUE Blue Carbon Read-only Lab",
+  "description": "Returns static public capability metadata; it cannot read private data or perform writes.",
+  "version": "0.1.0",
+  "configSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "hnblue_bluecarbon_capabilities"
+    ]
+  },
+  "toolMetadata": {
+    "hnblue_bluecarbon_capabilities": {
+      "optional": true
+    }
+  }
+}

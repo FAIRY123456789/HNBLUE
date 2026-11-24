@@ -27,12 +27,15 @@
  */
 package com.example.jpaspringboot.controller;
 
+import com.example.jpaspringboot.entity.ProfessionalAccount;
 import com.example.jpaspringboot.entity.User;
 import com.example.jpaspringboot.repository.UserRepository;
+import com.example.jpaspringboot.security.AccountRole;
 import com.example.jpaspringboot.service.AccessLimit;
 import com.example.jpaspringboot.service.impl.AdminServiceImpl;
 import com.example.jpaspringboot.service.impl.UserServiceImpl;
 import com.example.jpaspringboot.service.impl.UserActivityLogServiceImpl;
+import com.example.jpaspringboot.service.professional.ProfessionalAccountService;
 import com.example.jpaspringboot.util.JwtUtils;
 import com.example.jpaspringboot.util.RedisUtil;
 import com.example.jpaspringboot.util.PasswordPolicy;
@@ -52,6 +55,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
@@ -73,6 +77,9 @@ public class LoginController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private ProfessionalAccountService professionalAccountService;
 
     @Value("${hnblue.load-test-login.enabled:false}")
     private boolean loadTestLoginEnabled;
@@ -107,12 +114,24 @@ public class LoginController {
 
         try {
             if (adminServiceImpl.authenticateAdmin(username, password)) {
-                String token = JwtUtils.generateToken(username);
+                String token = JwtUtils.generateAccessToken(username, AccountRole.ADMIN, null, 0);
                 return ResponseEntity.ok().body(new LoginResponse("Admin", token));
             }
 
+            Optional<ProfessionalAccount> professional = professionalAccountService.authenticate(username, password);
+            if (professional.isPresent()) {
+                ProfessionalAccount account = professional.get();
+                professionalAccountService.markLogin(account);
+                String token = JwtUtils.generateAccessToken(account.getUsername(), AccountRole.PROFESSIONAL,
+                        account.getId(), account.getTokenVersion());
+                return ResponseEntity.ok().body(new LoginResponse("Professional", token,
+                        account.isPasswordChangeRequired()));
+            }
+
             if (userServiceImpl.authenticateUser(username, password)) {
-                String token = JwtUtils.generateToken(username);
+                User publicUser = userRepository.findByName(username);
+                String token = JwtUtils.generateAccessToken(username, AccountRole.PUBLIC,
+                        publicUser == null ? null : publicUser.getId().longValue(), 0);
                 userServiceImpl.markLastLogin(username);
                 activityLogService.record(null, username, "User", userServiceImpl.getUserIDByToken(token), "LOGIN_SUCCESS", "登录成功", "/api/login", "SUCCESS", null);
                 return ResponseEntity.ok().body(new LoginResponse("User", token));
@@ -373,10 +392,16 @@ public class LoginController {
     public static class LoginResponse {
         private String userType;  // 用户类型：Admin/User
         private String token;     // JWT认证令牌
+        private boolean passwordChangeRequired;
 
         public LoginResponse(String userType, String token) {
+            this(userType, token, false);
+        }
+
+        public LoginResponse(String userType, String token, boolean passwordChangeRequired) {
             this.userType = userType;
             this.token = token;
+            this.passwordChangeRequired = passwordChangeRequired;
         }
 
         // Getter和Setter方法
@@ -384,6 +409,8 @@ public class LoginController {
         public void setUserType(String userType) { this.userType = userType; }
         public String getToken() { return token; }
         public void setToken(String token) { this.token = token; }
+        public boolean isPasswordChangeRequired() { return passwordChangeRequired; }
+        public void setPasswordChangeRequired(boolean passwordChangeRequired) { this.passwordChangeRequired = passwordChangeRequired; }
 
         @Override
         public String toString() {

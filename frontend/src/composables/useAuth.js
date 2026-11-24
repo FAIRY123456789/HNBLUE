@@ -5,34 +5,40 @@ import { apiUrl } from '@/utils/urls';
 const TOKEN_KEY = 'token';
 const ROLE_KEY = 'userType';
 const USER_KEY = 'hnblue_user_info';
+const PASSWORD_CHANGE_KEY = 'hnblue_password_change_required';
 
 const state = reactive({
   token: '',
   role: '',
   userInfo: null,
   username: '',
+  passwordChangeRequired: false,
   restored: false,
 });
 
 function normalizeRole(role) {
   const value = String(role || '').toLowerCase();
   if (value === 'admin') return 'Admin';
+  if (value === 'professional') return 'Professional';
   if (value === 'user') return 'User';
   return '';
 }
 
-function persistSession(token, role, userInfo = undefined) {
+function persistSession(token, role, userInfo = undefined, passwordChangeRequired = false) {
   state.token = token || '';
   state.role = normalizeRole(role);
   if (!state.token) state.userInfo = null;
   else if (userInfo !== undefined) state.userInfo = userInfo;
   state.username = state.userInfo?.name || state.userInfo?.username || '';
+  state.passwordChangeRequired = Boolean(state.token && passwordChangeRequired);
   if (state.token) localStorage.setItem(TOKEN_KEY, state.token);
   else localStorage.removeItem(TOKEN_KEY);
   if (state.role) localStorage.setItem(ROLE_KEY, state.role);
   else localStorage.removeItem(ROLE_KEY);
   if (state.userInfo) localStorage.setItem(USER_KEY, JSON.stringify(state.userInfo));
   else localStorage.removeItem(USER_KEY);
+  if (state.passwordChangeRequired) localStorage.setItem(PASSWORD_CHANGE_KEY, 'true');
+  else localStorage.removeItem(PASSWORD_CHANGE_KEY);
   window.dispatchEvent(new CustomEvent('hnblue-auth-changed'));
 }
 
@@ -46,6 +52,7 @@ export function useAuth() {
       state.userInfo = null;
     }
     state.username = state.userInfo?.name || state.userInfo?.username || '';
+    state.passwordChangeRequired = localStorage.getItem(PASSWORD_CHANGE_KEY) === 'true';
     state.restored = true;
     return state;
   }
@@ -65,12 +72,17 @@ export function useAuth() {
       error.payload = payload;
       throw error;
     }
-    persistSession(payload.token, payload.userType, { name: credentials.username, username: credentials.username });
+    persistSession(
+      payload.token,
+      payload.userType,
+      { name: credentials.username, username: credentials.username },
+      payload.passwordChangeRequired,
+    );
     return payload;
   }
 
   function logout() {
-    persistSession('', '', null);
+    persistSession('', '', null, false);
   }
 
   async function refreshUser() {
@@ -82,7 +94,7 @@ export function useAuth() {
     }
     if (!response.ok) throw new Error('无法获取用户信息');
     const data = await response.json();
-    persistSession(state.token, state.role, data);
+    persistSession(state.token, state.role, data, state.passwordChangeRequired);
     return data;
   }
 
@@ -105,8 +117,10 @@ export function useAuth() {
     role: computed(() => state.role),
     username: computed(() => state.username),
     userInfo: computed(() => state.userInfo),
+    passwordChangeRequired: computed(() => state.passwordChangeRequired),
     isAuthenticated: computed(() => Boolean(state.token)),
     isAdmin: computed(() => state.role === 'Admin'),
+    isProfessional: computed(() => state.role === 'Professional'),
     restoreSession,
     login,
     logout,

@@ -2,6 +2,8 @@
 
 English · [简体中文](README.zh-CN.md)
 
+**2026-11-20 update:** LangGraph analysis and human review are available through the task API. [Agent review workflow](docs/AGENT_REVIEW_WORKFLOW.md)
+
 HNBLUE is a full-stack research and management prototype for blue-carbon data governance, regional visualization, biomass-model inference, governance workflows, and knowledge-assisted analysis in Hainan, China.
 
 The project integrates a Vue 3 client, a Spring Boot application and agent-orchestration layer, MySQL, Redis, a Flask/CatBoost inference service, and an HNBLUE-owned hybrid RAG service. DeepSeek is optional and is used only after retrieval and evidence checks; the system still returns extractive evidence when generation is unavailable.

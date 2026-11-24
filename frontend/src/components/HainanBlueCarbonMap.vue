@@ -23,7 +23,7 @@
         </button>
       </div>
       <div ref="chartRef" class="map-chart"></div>
-      <p class="boundary-note">行政区名称与代码依据民政部公开资料整理；地图边界用于空间定位和市县资料查询。</p>
+      <p class="boundary-note">交互边界仅用于 RC3 空间导航，不作为测绘、确权或行政边界结论；PDDL geoBoundaries 源与 CC BY 4.0 GMW 栅格已在受控资源区独立恢复。</p>
     </div>
 
     <article class="region-panel region-panel--compact">
@@ -54,6 +54,7 @@
           <div><dt>来源机构</dt><dd>{{ displayValue(activeProfile.primary_source_institution) }}</dd></div>
           <div><dt>资料年份</dt><dd>{{ sourceYearText(activeProfile) }}</dd></div>
           <div><dt>数据状态</dt><dd>{{ dataStatusText(activeProfile) }}</dd></div>
+          <div><dt>空间资源</dt><dd>{{ spatialResourceText }}</dd></div>
         </dl>
         <div class="source-actions">
           <a v-if="activeProfile.primary_source_url" class="source-link" :href="activeProfile.primary_source_url" target="_blank" rel="noreferrer">查看主要来源</a>
@@ -77,6 +78,7 @@ const mapScope = ref('main');
 const metricKey = ref('basic');
 const cityCountyGeo = ref(null);
 const profiles = ref([]);
+const spatialMeta = ref(null);
 const activeCode = ref('469005');
 let chart = null;
 let themeObserver = null;
@@ -113,6 +115,9 @@ const profileByCode = computed(() => Object.fromEntries(profiles.value.map((item
 const availableMetrics = computed(() => metrics.filter((metric) => !metric.field || profiles.value.some((item) => isNumeric(item[metric.field]))));
 const selectedMetric = computed(() => metrics.find((item) => item.key === metricKey.value) || metrics[0]);
 const panelEyebrow = computed(() => adminLevel.value === 'county' ? '市县级蓝碳资料' : '省级地图概览');
+const spatialResourceText = computed(() => spatialMeta.value
+  ? 'GMW v3 GeoTIFF 已恢复（CC BY 4.0）；交互边界仍按工程导航用途使用'
+  : '空间栅格元数据暂不可用；交互边界仅用于工程导航');
 
 const activeProfile = computed(() => {
   if (adminLevel.value === 'province') {
@@ -208,7 +213,7 @@ function verifiedMangroveText(profile) {
   if (!hasVerifiedMangroveArea(profile)) return '暂无已核验面积';
   const value = Number(profile.mangrove_area_ha).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
   const year = profile.latest_source_year || profile.administrative_area_year;
-  return year ? `${value} ha?${year}?` : `${value} ha`;
+  return year ? `${value} ha（${year}）` : `${value} ha`;
 }
 
 function hasVerifiedMangroveArea(profile) {
@@ -330,12 +335,16 @@ function renderMap() {
 }
 
 async function loadAssets() {
-  const [geoResponse, profileResponse] = await Promise.all([
+  const [geoResponse, profileResponse, spatialMetaPayload] = await Promise.all([
     fetch(publicUrl('/data/hainan-map/hainan_city_county_web.geojson'), { cache: 'no-cache' }),
     fetch(publicUrl('/data/hainan-map/hainan_city_county_profile.json'), { cache: 'no-cache' }),
+    fetch(publicUrl('/data/official-spatial/gmw/GeoTIFF元数据.json'), { cache: 'no-cache' })
+      .then((response) => response.ok ? response.json() : null)
+      .catch(() => null),
   ]);
   cityCountyGeo.value = await geoResponse.json();
   profiles.value = await profileResponse.json();
+  spatialMeta.value = spatialMetaPayload;
   await nextTick();
   renderMap();
 }

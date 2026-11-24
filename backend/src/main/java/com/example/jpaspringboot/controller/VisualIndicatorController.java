@@ -8,7 +8,7 @@
  *
  * 接口特性：
  * • RESTful API设计风格
- * • 无状态服务，无需身份验证
+ * • 查询保持公开，更新由 Spring Security 与 Service 层双重限制为 ADMIN
  * • 统一的JSON响应格式
  * • 异常处理与错误消息返回
  *
@@ -51,7 +51,7 @@ public class VisualIndicatorController {
      * @param indicator 指标类型编码
      * @param value 更新后的指标数值
      * @return 更新后的指标数据实体
-     * @apiNote 支持动态调整指标数值，无需身份验证
+     * @apiNote 支持动态调整指标数值，仅 ADMIN 可调用
      */
     @PutMapping("/update")
     public ResponseEntity<?> updateIndicator(@RequestParam String region,

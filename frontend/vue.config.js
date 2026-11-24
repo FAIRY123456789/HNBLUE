@@ -1,4 +1,5 @@
 const { defineConfig } = require('@vue/cli-service');
+const apiProxyTarget = process.env.VUE_APP_API_PROXY_TARGET || 'http://localhost:8088';
 
 module.exports = defineConfig({
   publicPath: process.env.VUE_APP_PUBLIC_PATH || '/',
@@ -8,23 +9,23 @@ module.exports = defineConfig({
     historyApiFallback: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8088',
+        target: apiProxyTarget,
         changeOrigin: true,
       },
       '/user/info': {
-        target: 'http://localhost:8088',
+        target: apiProxyTarget,
         changeOrigin: true,
       },
       '/user/updateInfo': {
-        target: 'http://localhost:8088',
+        target: apiProxyTarget,
         changeOrigin: true,
       },
       '/user/avatar': {
-        target: 'http://localhost:8088',
+        target: apiProxyTarget,
         changeOrigin: true,
       },
       '/admin': {
-        target: 'http://localhost:8088',
+        target: apiProxyTarget,
         changeOrigin: true,
       },
     },
